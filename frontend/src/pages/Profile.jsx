@@ -24,6 +24,8 @@ export default function Profile() {
     cb();
   };
 
+  }, []);
+
   const loadAddresses = async () => {
     if (!user) return;
     const { data } = await api.get(`/user-flow/addresses/${user.id}`);
@@ -50,6 +52,9 @@ export default function Profile() {
       <ProfileItem label="Orders" onClick={() => requireLogin(() => navigate("/profile/orders"))} />
       <ProfileItem label="Addresses" onClick={() => requireLogin(() => { setShowAddress(!showAddress); loadAddresses(); })} />
       <ProfileItem label="Coupons" onClick={() => requireLogin(() => navigate('/profile/coupons'))} />
+      <ProfileItem label="Orders" onClick={() => navigate("/profile/orders")} />
+      <ProfileItem label="Addresses" onClick={() => { setShowAddress(!showAddress); loadAddresses(); }} />
+      <ProfileItem label="Coupons" onClick={() => {}} />
       {user?.role === "USER" && <button onClick={() => setShowWorkerForm(!showWorkerForm)} className="mt-4 w-full bg-indigo-600 text-white py-3 rounded-xl">Work with us</button>}
       {user?.role === "WORKER" && <ProfileItem label="Worker Dashboard" onClick={() => navigate("/worker/dashboard")} />}
       {user?.role === "ADMIN" && <ProfileItem label="Admin Dashboard" onClick={() => navigate("/admin/dashboard")} />}
@@ -82,6 +87,7 @@ export default function Profile() {
       ) : (
         <button onClick={() => navigate('/login')} className="mt-6 w-full bg-indigo-600 text-white py-3 rounded-xl">Login / Signup</button>
       )}
+      <button onClick={() => { localStorage.removeItem("user"); setUser(null); navigate("/"); }} className="mt-6 w-full bg-red-500 text-white py-3 rounded-xl">Logout</button>
     </div>
   );
 }
