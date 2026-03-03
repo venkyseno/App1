@@ -1,12 +1,14 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.User;
+import com.example.demo.model.UserRole;
 import com.example.demo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -29,7 +31,51 @@ public class UserController {
         if (userRepository.findByMobile(user.getMobile()).isPresent()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User already exists");
         }
+        user.setRole(UserRole.USER);
         return ResponseEntity.ok(userRepository.save(user));
+    }
+
+    @PostMapping("/signup")
+    public ResponseEntity<?> signup(@RequestBody User user) {
+        if (user.getMobile() != null && userRepository.findByMobile(user.getMobile()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mobile already registered");
+        }
+        user.setRole(UserRole.USER);
+        user.setSignupProvider(user.getSignupProvider() == null ? "EMAIL" : user.getSignupProvider());
+        return ResponseEntity.ok(userRepository.save(user));
+    }
+
+    @PostMapping("/google-signup")
+    public ResponseEntity<?> googleSignup(@RequestBody Map<String, String> payload) {
+        String mobile = payload.get("mobile");
+        return userRepository.findByMobile(mobile)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.ok(userRepository.save(User.builder()
+                        .name(payload.getOrDefault("name", "Google User"))
+                        .mobile(mobile)
+                        .email(payload.get("email"))
+                        .password("google-auth")
+                        .signupProvider("GOOGLE")
+                        .role(UserRole.USER)
+                        .build())));
+    }
+
+    @PostMapping("/mobile-otp-signup")
+    public ResponseEntity<?> mobileOtpSignup(@RequestBody Map<String, String> payload) {
+        String mobile = payload.get("mobile");
+        String otp = payload.get("otp");
+        if (!"123456".equals(otp)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid OTP");
+        }
+        return userRepository.findByMobile(mobile)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.ok(userRepository.save(User.builder()
+                        .name(payload.getOrDefault("name", "Mobile User"))
+                        .mobile(mobile)
+                        .password("otp-login")
+                        .signupProvider("MOBILE_OTP")
+                        .role(UserRole.USER)
+                        .build())));
     }
 
     @PostMapping("/login")

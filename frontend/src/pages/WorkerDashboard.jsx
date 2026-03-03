@@ -12,6 +12,7 @@ const STATUS_COLORS = {
 export default function WorkerDashboard() {
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [earned, setEarned] = useState(0);
   const navigate = useNavigate();
 
   const user = JSON.parse(localStorage.getItem("user") || "null");
@@ -28,7 +29,9 @@ export default function WorkerDashboard() {
     setLoading(true);
     try {
       const res = await api.get(`/worker/cases/${user.id}`);
-      setCases(res.data.data ?? []);
+      const data = res.data.data ?? [];
+      setCases(data);
+      setEarned(data.filter(c => c.status === "CLOSED").reduce((sum, c) => sum + Number(c.serviceAmount || 0), 0));
     } catch (err) {
       console.error("Failed to load worker cases", err);
     } finally {
@@ -57,7 +60,8 @@ export default function WorkerDashboard() {
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-1">Worker Dashboard</h1>
-      <p className="text-gray-500 text-sm mb-4">Welcome, {user?.name}</p>
+      <p className="text-gray-500 text-sm mb-1">Welcome, {user?.name}</p>
+      <p className="text-sm mb-4">Works done: {cases.filter(c => c.status === "CLOSED").length} | Earned: ₹{earned}</p>
 
       {loading && <p className="text-gray-400">Loading cases...</p>}
 
