@@ -50,6 +50,7 @@ export default function ServiceDetail() {
         }}
       />
       {!!attachmentUrl && <p className="text-xs text-green-700 mb-4">Attachment selected successfully.</p>}
+      <input className="border p-2 rounded w-full mb-6" placeholder="Attachment URL (optional)" value={attachmentUrl} onChange={e=>setAttachmentUrl(e.target.value)} />
       <button onClick={handleBook} disabled={loading} className="bg-black text-white w-full py-3 rounded-xl disabled:opacity-50">{loading ? "Booking..." : "Confirm Booking"}</button>
     </div>
   );
