@@ -55,7 +55,7 @@ public class WorkerService {
             throw new InvalidLifecycleTransitionException("Only the assigned worker can complete the work");
         }
 
-        // Admin closes the case after review — worker just marks work done
-        return serviceCase;
+        serviceCase.setStatus(CaseStatus.WORK_DONE);
+        return repository.save(serviceCase);
     }
 }

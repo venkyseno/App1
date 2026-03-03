@@ -4,28 +4,21 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
+@Table(name = "other_services")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "users")
-public class User {
-
+public class OtherService {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String name;
-
-    @Column(unique = true)
-    private String mobile;
-
-    private String password;
-
-    private String email;
-    private String signupProvider;
-
-    @Enumerated(EnumType.STRING)
-    private UserRole role;
+    @Column(length = 500)
+    private String menuDetails;
+    private String imageUrl;
+    private String startPrice;
+    private Boolean active;
 }
