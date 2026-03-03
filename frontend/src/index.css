@@ -1,3 +1,18 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --brand-primary: #4f46e5;
+  --brand-secondary: #06b6d4;
+  --brand-accent: #f59e0b;
+}
+
+body {
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  min-height: 100vh;
+}
+
+.gradient-card {
+  background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+}
