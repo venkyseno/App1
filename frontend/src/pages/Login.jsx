@@ -4,7 +4,8 @@ import api from "../api/api";
 
 export default function Login() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState("login");
+  const [authType, setAuthType] = useState("login");
+  const [signupMethod, setSignupMethod] = useState("email");
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -18,24 +19,22 @@ export default function Login() {
     else navigate("/profile");
   };
 
-  const handleLogin = async () => {
-    const { data } = await api.post("/users/login", { mobile, password });
-    postAuthNavigate(data);
-  };
+  const submit = async () => {
+    if (authType === "login") {
+      const { data } = await api.post("/users/login", { mobile, password });
+      return postAuthNavigate(data);
+    }
 
-  const handleEmailSignup = async () => {
-    const { data } = await api.post("/users/signup", { name, email, mobile, password, signupProvider: "EMAIL" });
-    postAuthNavigate(data);
-  };
-
-  const handleGoogleSignup = async () => {
-    const { data } = await api.post("/users/google-signup", { name, email, mobile });
-    postAuthNavigate(data);
-  };
-
-  const handleOtpSignup = async () => {
+    if (signupMethod === "email") {
+      const { data } = await api.post("/users/signup", { name, email, mobile, password, signupProvider: "EMAIL" });
+      return postAuthNavigate(data);
+    }
+    if (signupMethod === "google") {
+      const { data } = await api.post("/users/google-signup", { name, email, mobile });
+      return postAuthNavigate(data);
+    }
     const { data } = await api.post("/users/mobile-otp-signup", { name, mobile, otp });
-    postAuthNavigate(data);
+    return postAuthNavigate(data);
   };
 
   return (

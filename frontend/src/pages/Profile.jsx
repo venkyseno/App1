@@ -16,6 +16,14 @@ export default function Profile() {
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser && storedUser !== "undefined") setUser(JSON.parse(storedUser));
+    else setUser(null);
+  }, []);
+
+  const requireLogin = (cb) => {
+    if (!user) return navigate("/login");
+    cb();
+  };
+
   }, []);
 
   const loadAddresses = async () => {
@@ -41,6 +49,9 @@ export default function Profile() {
     <div className="p-6">
       {user && <div className="mb-4 p-4 bg-white rounded-xl"><p className="font-semibold">{user.name}</p><p>{user.mobile}</p><span className="text-xs bg-blue-100 px-2 rounded">{user.role}</span></div>}
       <h1 className="text-xl font-bold mb-3">My Account</h1>
+      <ProfileItem label="Orders" onClick={() => requireLogin(() => navigate("/profile/orders"))} />
+      <ProfileItem label="Addresses" onClick={() => requireLogin(() => { setShowAddress(!showAddress); loadAddresses(); })} />
+      <ProfileItem label="Coupons" onClick={() => requireLogin(() => navigate('/profile/coupons'))} />
       <ProfileItem label="Orders" onClick={() => navigate("/profile/orders")} />
       <ProfileItem label="Addresses" onClick={() => { setShowAddress(!showAddress); loadAddresses(); }} />
       <ProfileItem label="Coupons" onClick={() => {}} />
@@ -71,6 +82,11 @@ export default function Profile() {
         </div>
       )}
 
+      {user ? (
+        <button onClick={() => { localStorage.removeItem("user"); setUser(null); navigate("/"); }} className="mt-6 w-full bg-red-500 text-white py-3 rounded-xl">Logout</button>
+      ) : (
+        <button onClick={() => navigate('/login')} className="mt-6 w-full bg-indigo-600 text-white py-3 rounded-xl">Login / Signup</button>
+      )}
       <button onClick={() => { localStorage.removeItem("user"); setUser(null); navigate("/"); }} className="mt-6 w-full bg-red-500 text-white py-3 rounded-xl">Logout</button>
     </div>
   );

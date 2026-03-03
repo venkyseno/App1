@@ -6,11 +6,8 @@ import api from "../api/api";
 
 export default function Home() {
   const [otherServices, setOtherServices] = useState([]);
-  const [coupons, setCoupons] = useState([]);
-
   useEffect(() => {
     api.get("/config/other-services").then((r) => setOtherServices(r.data || [])).catch(() => setOtherServices([]));
-    api.get("/config/coupons").then((r) => setCoupons(r.data || [])).catch(() => setCoupons([]));
   }, []);
 
   return (
@@ -28,12 +25,7 @@ export default function Home() {
         ))}
       </div>
 
-      {!!coupons.length && (
-        <div>
-          <h2 className="text-xl font-bold mb-2">Coupons</h2>
-          {coupons.map(c => <div key={c.id} className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-2"><b>{c.code}</b> - {c.message}</div>)}
-        </div>
-      )}
+      
 
       <h2 className="text-xl font-bold">Other Services</h2>
       <div className="space-y-3">
