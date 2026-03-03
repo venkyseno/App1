@@ -62,6 +62,14 @@ export default function Profile() {
 
   }, []);
 
+  const requireLogin = (cb) => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    cb();
+  };
+
   const loadAddresses = async () => {
     if (!user) return;
     const { data } = await api.get(`/user-flow/addresses/${user.id}`);
@@ -98,6 +106,18 @@ export default function Profile() {
       landmark: "",
       primaryAddress: false,
     });
+    loadAddresses();
+  };
+
+  const handleToggleAddresses = () => {
+    setShowAddress((prev) => !prev);
+    loadAddresses();
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+    navigate("/");
     await api.post("/user-flow/addresses", { ...newAddress, userId: user.id });
     setNewAddress({ addressLine: "", city: "", landmark: "", primaryAddress: false });
     loadAddresses();
@@ -118,6 +138,7 @@ export default function Profile() {
       <ProfileItem label="Orders" onClick={() => requireLogin(() => navigate("/profile/orders"))} />
       <ProfileItem
         label="Addresses"
+        onClick={() => requireLogin(handleToggleAddresses)}
         onClick={() => requireLogin(() => {
           setShowAddress(!showAddress);
           loadAddresses();
@@ -232,14 +253,17 @@ export default function Profile() {
 
       {user ? (
         <button
-          onClick={() => {
-            localStorage.removeItem("user");
-            setUser(null);
-            navigate("/");
-          }}
+          onClick={handleLogout}
           className="mt-6 w-full bg-red-500 text-white py-3 rounded-xl"
         >
           Logout
+        </button>
+      ) : (
+        <button
+          onClick={() => navigate("/login")}
+          className="mt-6 w-full bg-indigo-600 text-white py-3 rounded-xl"
+        >
+          Login / Signup
         </button>
       ) : (
         <button
