@@ -23,6 +23,11 @@ public class ServiceCaseController {
         return SuccessResponse.ok(service.createCase(request));
     }
 
+    @GetMapping
+    public SuccessResponse<List<ServiceCase>> getAllCases() {
+        return SuccessResponse.ok(service.getAllCases());
+    }
+
     @GetMapping("/{id}")
     public SuccessResponse<ServiceCase> getCase(@PathVariable Long id) {
         return SuccessResponse.ok(service.getCaseById(id));
