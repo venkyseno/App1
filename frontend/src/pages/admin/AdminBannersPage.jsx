@@ -3,7 +3,17 @@ import api, { uploadFile } from "../../api/api";
 import { services } from "../../data/Services";
 import { Badge, Card, DangerButton, EmptyState, InputField, PageContainer, PrimaryButton, SectionHeader, SelectField, SecondaryButton, TextAreaField } from "../../components/ui";
 
-const EMPTY_BANNER = { title: "", imageUrl: "", redirectType: "SERVICE", targetId: "", redirectPath: "/", sortOrder: 1, active: true };
+const EMPTY_BANNER = {
+  title: "",
+  imageUrl: "",
+  redirectType: "SERVICE",
+  targetId: "",
+  redirectPath: "/",
+  sortOrder: 1,
+  displaySeconds: 5,
+  placement: "HOME",
+  active: true,
+};
 const EMPTY_SERVICE = { name: "", menuDetails: "", imageUrl: "", startPrice: "", active: true };
 
 const buildRedirectPath = (type, targetId) => {
@@ -14,6 +24,15 @@ const buildRedirectPath = (type, targetId) => {
   return "/";
 };
 
+const deriveTypeAndTarget = (redirectPath = "") => {
+  if (!redirectPath) return { redirectType: "SERVICE", targetId: "" };
+  if (redirectPath === "/#all-services") return { redirectType: "ALL_SERVICES", targetId: "" };
+  if (redirectPath === "/#other-services") return { redirectType: "OTHER_SERVICES", targetId: "" };
+  if (redirectPath.startsWith("/service/")) return { redirectType: "SERVICE", targetId: redirectPath.split("/service/")[1] || "" };
+  if (redirectPath.startsWith("/other-services/")) return { redirectType: "OTHER_SERVICE", targetId: redirectPath.split("/other-services/")[1] || "" };
+  return { redirectType: "SERVICE", targetId: "" };
+};
+
 export default function AdminBannersPage() {
   const [banners, setBanners] = useState([]);
   const [otherServices, setOtherServices] = useState([]);
@@ -21,30 +40,19 @@ export default function AdminBannersPage() {
   const [selectedServiceId, setSelectedServiceId] = useState("");
   const [itemForm, setItemForm] = useState({ name: "", price: "", availableQuantity: "" });
   const [bannerForm, setBannerForm] = useState(EMPTY_BANNER);
+  const [editingBanner, setEditingBanner] = useState(null);
   const [serviceForm, setServiceForm] = useState(EMPTY_SERVICE);
   const [editingService, setEditingService] = useState(null);
 
   const notifyApiError = (err) => alert(err?.response?.data || err?.message || "Request failed");
 
   const load = async () => {
-    const [bannersRes, otherServicesRes] = await Promise.allSettled([
-      api.get("/admin/banners"),
-      api.get("/admin/other-services"),
-    ]);
+    const [bannersRes, otherServicesRes] = await Promise.allSettled([api.get("/admin/banners"), api.get("/admin/other-services")]);
+    if (bannersRes.status === "fulfilled") setBanners(bannersRes.value.data || []);
+    else { setBanners([]); notifyApiError(bannersRes.reason); }
 
-    if (bannersRes.status === "fulfilled") {
-      setBanners(bannersRes.value.data || []);
-    } else {
-      setBanners([]);
-      notifyApiError(bannersRes.reason);
-    }
-
-    if (otherServicesRes.status === "fulfilled") {
-      setOtherServices(otherServicesRes.value.data || []);
-    } else {
-      setOtherServices([]);
-      notifyApiError(otherServicesRes.reason);
-    }
+    if (otherServicesRes.status === "fulfilled") setOtherServices(otherServicesRes.value.data || []);
+    else { setOtherServices([]); notifyApiError(otherServicesRes.reason); }
   };
 
   useEffect(() => { load(); }, []);
@@ -58,22 +66,19 @@ export default function AdminBannersPage() {
 
   const redirectPreview = useMemo(() => buildRedirectPath(bannerForm.redirectType, bannerForm.targetId), [bannerForm.redirectType, bannerForm.targetId]);
 
-  const serviceTargetOptions = useMemo(
-    () => services.map((service) => ({ id: String(service.id), label: `${service.id} - ${service.name}` })),
-    [],
-  );
+  const serviceTargetOptions = useMemo(() => services.map((service) => ({ id: String(service.id), label: `${service.id} - ${service.name}` })), []);
+  const otherServiceTargetOptions = useMemo(() => otherServices.map((service) => ({ id: String(service.id), label: `${service.id} - ${service.name}` })), [otherServices]);
 
-  const otherServiceTargetOptions = useMemo(
-    () => otherServices.map((service) => ({ id: String(service.id), label: `${service.id} - ${service.name}` })),
-    [otherServices],
-  );
+  const validateBanner = (form) => {
+    if (!form.title.trim()) return "Banner title is required";
+    if (!form.imageUrl?.trim()) return "Banner image is required";
+    if ((form.redirectType === "SERVICE" || form.redirectType === "OTHER_SERVICE") && !form.targetId) return "Please select a target ID";
+    return null;
+  };
 
   const saveBanner = async () => {
-    if (!bannerForm.title.trim()) return alert("Banner title is required");
-    if (!bannerForm.imageUrl?.trim()) return alert("Banner image is required");
-    if ((bannerForm.redirectType === "SERVICE" || bannerForm.redirectType === "OTHER_SERVICE") && !bannerForm.targetId) {
-      return alert("Please select a target ID for this redirect type");
-    }
+    const error = validateBanner(bannerForm);
+    if (error) return alert(error);
 
     try {
       await api.post("/admin/banners", {
@@ -81,9 +86,40 @@ export default function AdminBannersPage() {
         imageUrl: bannerForm.imageUrl,
         redirectPath: redirectPreview,
         sortOrder: Number(bannerForm.sortOrder || 1),
+        displaySeconds: Number(bannerForm.displaySeconds || 5),
+        placement: bannerForm.placement || "HOME",
         active: true,
       });
       setBannerForm({ ...EMPTY_BANNER, sortOrder: banners.length + 1 });
+      load();
+    } catch (err) { notifyApiError(err); }
+  };
+
+  const startEditBanner = (banner) => {
+    const parsed = deriveTypeAndTarget(banner.redirectPath);
+    setEditingBanner({
+      ...banner,
+      redirectType: parsed.redirectType,
+      targetId: parsed.targetId,
+      displaySeconds: banner.displaySeconds || 5,
+      placement: banner.placement || "HOME",
+    });
+  };
+
+  const updateBanner = async () => {
+    if (!editingBanner) return;
+    const error = validateBanner(editingBanner);
+    if (error) return alert(error);
+
+    try {
+      await api.put(`/admin/banners/${editingBanner.id}`, {
+        ...editingBanner,
+        redirectPath: buildRedirectPath(editingBanner.redirectType, editingBanner.targetId),
+        sortOrder: Number(editingBanner.sortOrder || 1),
+        displaySeconds: Number(editingBanner.displaySeconds || 5),
+        placement: editingBanner.placement || "HOME",
+      });
+      setEditingBanner(null);
       load();
     } catch (err) { notifyApiError(err); }
   };
@@ -115,7 +151,11 @@ export default function AdminBannersPage() {
     if (!itemForm.price) return alert("Item price is required");
     if (!itemForm.availableQuantity) return alert("Quantity is required");
     try {
-      await api.post(`/admin/other-services/${selectedServiceId}/items`, { name: itemForm.name, price: Number(itemForm.price), availableQuantity: Number(itemForm.availableQuantity) });
+      await api.post(`/admin/other-services/${selectedServiceId}/items`, {
+        name: itemForm.name,
+        price: Number(itemForm.price),
+        availableQuantity: Number(itemForm.availableQuantity),
+      });
       setItemForm({ name: "", price: "", availableQuantity: "" });
       const res = await api.get(`/admin/other-services/${selectedServiceId}/items`);
       setItems(res.data || []);
@@ -125,17 +165,19 @@ export default function AdminBannersPage() {
   return (
     <PageContainer title="Banner & Service Management" subtitle="Publish campaigns, attach redirect targets, and manage service menu items.">
       <Card>
-        <SectionHeader title="Create Banner" subtitle="Select redirect type, then select exact target ID from available services." />
+        <SectionHeader title="Create Banner" subtitle="Add title, placement, timing, image and redirect destination." />
         <div className="grid gap-3 md:grid-cols-2">
           <InputField label="Title" placeholder="Festival Offer Banner" value={bannerForm.title} onChange={(e) => setBannerForm({ ...bannerForm, title: e.target.value })} />
           <InputField label="Sort order" type="number" value={bannerForm.sortOrder} onChange={(e) => setBannerForm({ ...bannerForm, sortOrder: e.target.value })} />
+          <InputField label="Display seconds" type="number" value={bannerForm.displaySeconds} onChange={(e) => setBannerForm({ ...bannerForm, displaySeconds: e.target.value })} />
+          <SelectField label="Placement" value={bannerForm.placement} onChange={(e) => setBannerForm({ ...bannerForm, placement: e.target.value })}>
+            <option value="HOME">Home</option>
+            <option value="TOP">Top</option>
+          </SelectField>
         </div>
+
         <div className="mt-3 grid gap-3 md:grid-cols-2">
-          <SelectField
-            label="Redirect Type"
-            value={bannerForm.redirectType}
-            onChange={(e) => setBannerForm({ ...bannerForm, redirectType: e.target.value, targetId: "" })}
-          >
+          <SelectField label="Redirect Type" value={bannerForm.redirectType} onChange={(e) => setBannerForm({ ...bannerForm, redirectType: e.target.value, targetId: "" })}>
             <option value="SERVICE">Service page</option>
             <option value="OTHER_SERVICE">Other service page</option>
             <option value="ALL_SERVICES">All services section</option>
@@ -160,9 +202,9 @@ export default function AdminBannersPage() {
         <div className="mt-3 rounded-lg bg-indigo-50 px-3 py-2 text-sm text-indigo-900">
           <p className="font-medium">Target ID Guide</p>
           <ul className="mt-1 list-disc pl-5 text-xs text-indigo-800">
-            <li><b>Service page</b>: choose one ID from fixed home services list (e.g., 1 - Electrician).</li>
-            <li><b>Other service page</b>: choose one ID from published Other Services.</li>
-            <li><b>All services/Other services</b>: no target ID needed; redirects to section anchors.</li>
+            <li><b>Service page</b>: select a fixed service ID.</li>
+            <li><b>Other service page</b>: select an existing other-service ID.</li>
+            <li><b>All services / Other services</b>: no target ID needed.</li>
           </ul>
           <p className="mt-2">Redirect preview: <span className="font-semibold">{redirectPreview}</span></p>
         </div>
@@ -181,6 +223,73 @@ export default function AdminBannersPage() {
         </div>
         {bannerForm.imageUrl && <img src={bannerForm.imageUrl} alt="banner-preview" className="mt-3 h-28 w-full rounded-lg object-cover" />}
       </Card>
+
+      <Card>
+        <SectionHeader title="Existing Banners" subtitle="Edit or delete already published banners." />
+        {banners.length === 0 ? <EmptyState title="No banners available" /> : (
+          <div className="space-y-2">
+            {banners.map((banner) => (
+              <div key={banner.id} className="flex items-center justify-between rounded-lg border border-gray-200 p-3">
+                <div className="min-w-0">
+                  <p className="font-medium text-gray-900">#{banner.id} - {banner.title}</p>
+                  <p className="truncate text-xs text-gray-500">{banner.redirectPath || "/"}</p>
+                  <p className="text-xs text-indigo-600">Placement: {banner.placement || "HOME"} • {banner.displaySeconds || 5}s</p>
+                </div>
+                <div className="flex gap-2">
+                  <SecondaryButton onClick={() => startEditBanner(banner)}>Edit</SecondaryButton>
+                  <DangerButton onClick={async () => { await api.delete(`/admin/banners/${banner.id}`); if (editingBanner?.id === banner.id) setEditingBanner(null); load(); }}>Delete</DangerButton>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {editingBanner && (
+        <Card>
+          <SectionHeader title={`Edit Banner: ${editingBanner.title}`} action={<Badge tone="purple">Banner ID #{editingBanner.id}</Badge>} />
+          <div className="grid gap-3 md:grid-cols-2">
+            <InputField label="Banner Name" value={editingBanner.title || ""} onChange={(e) => setEditingBanner({ ...editingBanner, title: e.target.value })} />
+            <InputField label="Sort order" type="number" value={editingBanner.sortOrder || 1} onChange={(e) => setEditingBanner({ ...editingBanner, sortOrder: e.target.value })} />
+            <InputField label="Display seconds" type="number" value={editingBanner.displaySeconds || 5} onChange={(e) => setEditingBanner({ ...editingBanner, displaySeconds: e.target.value })} />
+            <SelectField label="Placement" value={editingBanner.placement || "HOME"} onChange={(e) => setEditingBanner({ ...editingBanner, placement: e.target.value })}>
+              <option value="HOME">Home</option>
+              <option value="TOP">Top</option>
+            </SelectField>
+            <SelectField label="Redirect Type" value={editingBanner.redirectType || "SERVICE"} onChange={(e) => setEditingBanner({ ...editingBanner, redirectType: e.target.value, targetId: "" })}>
+              <option value="SERVICE">Service page</option>
+              <option value="OTHER_SERVICE">Other service page</option>
+              <option value="ALL_SERVICES">All services section</option>
+              <option value="OTHER_SERVICES">Other services section</option>
+            </SelectField>
+            {editingBanner.redirectType === "SERVICE" && (
+              <SelectField label="Target ID (Service)" value={editingBanner.targetId || ""} onChange={(e) => setEditingBanner({ ...editingBanner, targetId: e.target.value })}>
+                <option value="">Select service</option>
+                {serviceTargetOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+              </SelectField>
+            )}
+            {editingBanner.redirectType === "OTHER_SERVICE" && (
+              <SelectField label="Target ID (Other Service)" value={editingBanner.targetId || ""} onChange={(e) => setEditingBanner({ ...editingBanner, targetId: e.target.value })}>
+                <option value="">Select other service</option>
+                {otherServiceTargetOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+              </SelectField>
+            )}
+          </div>
+          <div className="mt-3 flex items-center gap-3">
+            <input type="file" accept="image/*" className="block w-full text-sm" onChange={async (e) => {
+              try {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const imageUrl = await uploadFile(file);
+                setEditingBanner((prev) => ({ ...prev, imageUrl }));
+              } catch (err) { notifyApiError(err); }
+            }} />
+            <PrimaryButton onClick={updateBanner}>Save Banner</PrimaryButton>
+            <SecondaryButton onClick={() => setEditingBanner(null)}>Cancel</SecondaryButton>
+          </div>
+          {editingBanner.imageUrl && <img src={editingBanner.imageUrl} alt="edit-banner-preview" className="mt-3 h-28 w-full rounded-lg object-cover" />}
+        </Card>
+      )}
 
       <Card>
         <SectionHeader title="Create Other Service" subtitle="Create marketplace services with image, description and starting price." />
