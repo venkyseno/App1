@@ -18,6 +18,7 @@ import AdminWorkersPage from "./pages/admin/AdminWorkersPage";
 import AdminWorksPage from "./pages/admin/AdminWorksPage";
 import AdminCouponsPage from "./pages/admin/AdminCouponsPage";
 import AdminWithdrawalsPage from "./pages/admin/AdminWithdrawalsPage";
+import OtherServiceDetail from "./pages/OtherServiceDetail";
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
           <Route path="/profile/wallet" element={<Wallet />} />
           <Route path="/profile/withdraw" element={<Withdraw />} />
           <Route path="/profile/coupons" element={<Coupons />} />
+          <Route path="/other-services/:id" element={<OtherServiceDetail />} />
           <Route path="/ask-ai" element={<AskAI />} />
           <Route
             path="/admin/dashboard"

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import api from "../../api/api";
-import { fileToDataUrl } from "../../utils/file";
+import api, { uploadFile } from "../../api/api";
 
 const EMPTY_BANNER = { title: "", imageUrl: "", redirectPath: "/", sortOrder: 1, active: true };
 const EMPTY_SERVICE = { name: "", menuDetails: "", imageUrl: "", startPrice: "", active: true };
@@ -8,6 +7,9 @@ const EMPTY_SERVICE = { name: "", menuDetails: "", imageUrl: "", startPrice: "",
 export default function AdminBannersPage() {
   const [banners, setBanners] = useState([]);
   const [otherServices, setOtherServices] = useState([]);
+  const [items, setItems] = useState([]);
+  const [selectedServiceId, setSelectedServiceId] = useState("");
+  const [itemForm, setItemForm] = useState({ name: "", price: "", availableQuantity: "" });
   const [bannerForm, setBannerForm] = useState(EMPTY_BANNER);
   const [serviceForm, setServiceForm] = useState(EMPTY_SERVICE);
 
@@ -18,35 +20,48 @@ export default function AdminBannersPage() {
   };
 
   useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (!selectedServiceId) return setItems([]);
+    api.get(`/admin/other-services/${selectedServiceId}/items`).then((r) => setItems(r.data || []));
+  }, [selectedServiceId]);
 
-  const notifyApiError = (err) => {
-    alert(err?.response?.data?.message || err?.response?.data || "Request failed. Please check fields and retry.");
-  };
+  const notifyApiError = (err) => alert(err?.response?.data?.message || err?.response?.data || "Request failed");
 
   const saveBanner = async () => {
     if (!bannerForm.title.trim()) return alert("Banner title is required");
     if (!bannerForm.imageUrl?.trim()) return alert("Banner image is required");
-
     try {
       await api.post("/admin/banners", { ...bannerForm, sortOrder: Number(bannerForm.sortOrder || 1) });
       setBannerForm({ ...EMPTY_BANNER, sortOrder: banners.length + 1 });
       load();
-    } catch (err) {
-      notifyApiError(err);
-    }
+    } catch (err) { notifyApiError(err); }
   };
 
   const saveOtherService = async () => {
     if (!serviceForm.name.trim()) return alert("Other service name is required");
     if (!serviceForm.imageUrl?.trim()) return alert("Other service image is required");
-
     try {
       await api.post("/admin/other-services", serviceForm);
       setServiceForm(EMPTY_SERVICE);
       load();
-    } catch (err) {
-      notifyApiError(err);
-    }
+    } catch (err) { notifyApiError(err); }
+  };
+
+  const addMenuItem = async () => {
+    if (!selectedServiceId) return alert("Select a service");
+    if (!itemForm.name.trim()) return alert("Item name is required");
+    if (!itemForm.price) return alert("Item price is required");
+    if (!itemForm.availableQuantity) return alert("Quantity is required");
+    try {
+      await api.post(`/admin/other-services/${selectedServiceId}/items`, {
+        name: itemForm.name,
+        price: Number(itemForm.price),
+        availableQuantity: Number(itemForm.availableQuantity),
+      });
+      setItemForm({ name: "", price: "", availableQuantity: "" });
+      const res = await api.get(`/admin/other-services/${selectedServiceId}/items`);
+      setItems(res.data || []);
+    } catch (err) { notifyApiError(err); }
   };
 
   return (
@@ -61,41 +76,22 @@ export default function AdminBannersPage() {
         <input className="border p-2 rounded w-full mb-2" type="file" accept="image/*" capture="environment" onChange={async (e) => {
           const file = e.target.files?.[0];
           if (!file) return;
-          const dataUrl = await fileToDataUrl(file);
-          setBannerForm({ ...bannerForm, imageUrl: dataUrl });
+          const imageUrl = await uploadFile(file);
+          setBannerForm({ ...bannerForm, imageUrl });
         }} />
         <button onClick={saveBanner} className="bg-indigo-600 text-white px-4 py-2 rounded">Publish Banner</button>
-
-        <div className="mt-4 space-y-2">
-          {banners.map((banner) => (
-            <div key={banner.id} className="border rounded p-2 flex justify-between items-center">
-              <span>{banner.title}</span>
-              <div className="space-x-2">
-                <button onClick={async () => {
-                  const title = prompt("Edit title", banner.title);
-                  if (!title) return;
-                  try {
-                    await api.put(`/admin/banners/${banner.id}`, { ...banner, title });
-                    load();
-                  } catch (err) { notifyApiError(err); }
-                }} className="text-blue-600">Edit</button>
-                <button onClick={async () => { await api.delete(`/admin/banners/${banner.id}`); load(); }} className="text-red-600">Delete</button>
-              </div>
-            </div>
-          ))}
-        </div>
       </section>
 
       <section className="bg-white rounded-xl p-4 shadow">
         <h2 className="font-semibold mb-3">Create / Manage Other Services</h2>
         <input className="border p-2 rounded w-full mb-2" placeholder="Service name (required)" value={serviceForm.name} onChange={(e) => setServiceForm({ ...serviceForm, name: e.target.value })} />
-        <textarea className="border p-2 rounded w-full mb-2" placeholder="Menu details" value={serviceForm.menuDetails} onChange={(e) => setServiceForm({ ...serviceForm, menuDetails: e.target.value })} />
+        <textarea className="border p-2 rounded w-full mb-2" placeholder="Service description" value={serviceForm.menuDetails} onChange={(e) => setServiceForm({ ...serviceForm, menuDetails: e.target.value })} />
         <input className="border p-2 rounded w-full mb-2" placeholder="Start price" value={serviceForm.startPrice} onChange={(e) => setServiceForm({ ...serviceForm, startPrice: e.target.value })} />
         <input className="border p-2 rounded w-full mb-2" type="file" accept="image/*" capture="environment" onChange={async (e) => {
           const file = e.target.files?.[0];
           if (!file) return;
-          const dataUrl = await fileToDataUrl(file);
-          setServiceForm({ ...serviceForm, imageUrl: dataUrl });
+          const imageUrl = await uploadFile(file);
+          setServiceForm({ ...serviceForm, imageUrl });
         }} />
         <button onClick={saveOtherService} className="bg-green-600 text-white px-4 py-2 rounded">Publish Other Service</button>
 
@@ -103,17 +99,32 @@ export default function AdminBannersPage() {
           {otherServices.map((s) => (
             <div key={s.id} className="border rounded p-2 flex justify-between items-center">
               <span>{s.name}</span>
-              <div className="space-x-2">
-                <button onClick={async () => {
-                  const name = prompt("Edit service name", s.name);
-                  if (!name) return;
-                  try {
-                    await api.put(`/admin/other-services/${s.id}`, { ...s, name });
-                    load();
-                  } catch (err) { notifyApiError(err); }
-                }} className="text-blue-600">Edit</button>
-                <button onClick={async () => { await api.delete(`/admin/other-services/${s.id}`); load(); }} className="text-red-600">Delete</button>
-              </div>
+              <button onClick={() => setSelectedServiceId(String(s.id))} className="text-indigo-600">Manage menu items</button>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="bg-white rounded-xl p-4 shadow">
+        <h2 className="font-semibold mb-3">Menu Items (Other Services)</h2>
+        <select className="border p-2 rounded w-full mb-2" value={selectedServiceId} onChange={(e) => setSelectedServiceId(e.target.value)}>
+          <option value="">Select service</option>
+          {otherServices.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+        <input className="border p-2 rounded w-full mb-2" placeholder="Item name" value={itemForm.name} onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })} />
+        <input className="border p-2 rounded w-full mb-2" type="number" placeholder="Price" value={itemForm.price} onChange={(e) => setItemForm({ ...itemForm, price: e.target.value })} />
+        <input className="border p-2 rounded w-full mb-2" type="number" placeholder="Available quantity" value={itemForm.availableQuantity} onChange={(e) => setItemForm({ ...itemForm, availableQuantity: e.target.value })} />
+        <button onClick={addMenuItem} className="bg-black text-white px-4 py-2 rounded">Add Menu Item</button>
+
+        <div className="mt-4 space-y-2">
+          {items.map((item) => (
+            <div key={item.id} className="border rounded p-2 flex justify-between">
+              <span>{item.name} • ₹{item.price} • Qty {item.availableQuantity}</span>
+              <button onClick={async () => {
+                await api.delete(`/admin/other-services/items/${item.id}`);
+                const res = await api.get(`/admin/other-services/${selectedServiceId}/items`);
+                setItems(res.data || []);
+              }} className="text-red-600">Delete</button>
             </div>
           ))}
         </div>

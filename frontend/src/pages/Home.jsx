@@ -29,7 +29,7 @@ export default function Home() {
       <h2 className="text-xl font-bold">Other Services</h2>
       <div className="space-y-3">
         {otherServices.map((service) => (
-          <Link key={service.id} to="/service/6" className="block bg-white shadow rounded-xl p-3 border">
+          <Link key={service.id} to={`/other-services/${service.id}`} className="block bg-white shadow rounded-xl p-3 border">
             <div className="flex gap-3">
               {service.imageUrl ? (
                 <img src={service.imageUrl} alt={service.name} className="w-24 h-16 object-cover rounded-lg" />
