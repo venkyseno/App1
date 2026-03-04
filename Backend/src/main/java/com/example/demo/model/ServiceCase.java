@@ -30,6 +30,9 @@ public class ServiceCase {
 
     private Long workerId;
 
+    @Column(length = 1000)
+    private String attachmentUrl;
+
     @Enumerated(EnumType.STRING)
     private CaseStatus status;
 
