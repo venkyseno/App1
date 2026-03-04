@@ -98,15 +98,6 @@ public class AdminFlowController {
         if (trimOrEmpty(banner.getPlacement()).isEmpty()) {
             banner.setPlacement("HOME");
         }
-
-    @PostMapping("/banners")
-    public Banner saveBanner(@RequestBody Banner banner) {
-        if (trimOrEmpty(banner.getTitle()).isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Banner title is required");
-        if (trimOrEmpty(banner.getImageUrl()).isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Banner image is required");
-        if (banner.getActive() == null) banner.setActive(true);
-        if (banner.getSortOrder() == null) banner.setSortOrder(1);
-        if (banner.getDisplaySeconds() == null || banner.getDisplaySeconds() <= 0) banner.setDisplaySeconds(5);
-        if (trimOrEmpty(banner.getPlacement()).isEmpty()) banner.setPlacement("HOME");
         return bannerRepository.save(banner);
     }
 
@@ -157,12 +148,6 @@ public class AdminFlowController {
         if (service.getActive() == null) {
             service.setActive(true);
         }
-
-    @PostMapping("/other-services")
-    public OtherService saveOtherService(@RequestBody OtherService service) {
-        if (trimOrEmpty(service.getName()).isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Other service name is required");
-        if (trimOrEmpty(service.getImageUrl()).isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Other service image is required");
-        if (service.getActive() == null) service.setActive(true);
         return otherServiceRepository.save(service);
     }
 

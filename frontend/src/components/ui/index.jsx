@@ -18,7 +18,7 @@ export function PageContainer({ title, subtitle, action, children, className = "
 }
 
 export function Card({ children, className = "" }) {
-  return <div className={`rounded-xl border border-gray-100 bg-white p-5 shadow-sm transition hover:shadow-lg ${className}`}>{children}</div>;
+  return <div className={`rounded-xl border border-gray-100 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-xl animate-float-in ${className}`}>{children}</div>;
 }
 
 export function SectionHeader({ title, subtitle, action }) {

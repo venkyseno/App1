@@ -17,16 +17,16 @@ export default function Home() {
       <BannerSlider />
 
       <section id="all-services">
-        <SectionHeader title="All Services" subtitle="Home services curated for your daily needs." />
-        <div className="grid gap-4 md:grid-cols-3">
+        <SectionHeader title="All Services" subtitle="Universal 3-column service grid on mobile + desktop." />
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4">
           {services.map((service) => (
             <Link key={service.id} to={`/service/${service.id}`}>
-              <Card className="h-full bg-gradient-to-br from-white to-indigo-50 hover:-translate-y-0.5">
-                <div className="text-3xl">{service.icon}</div>
-                <h3 className="mt-3 text-lg font-semibold text-gray-900">{service.name}</h3>
-                <p className="mt-1 text-sm text-gray-500">{service.description}</p>
-                <p className="mt-4 text-sm font-medium text-indigo-600">Starting {service.price}</p>
-                <PrimaryButton className="mt-4 w-full">Book Now</PrimaryButton>
+              <Card className="h-full bg-gradient-to-br from-white to-indigo-50 p-3 sm:p-4">
+                <div className="text-xl sm:text-2xl">{service.icon}</div>
+                <h3 className="mt-2 text-xs sm:text-sm font-semibold leading-tight text-gray-900">{service.name}</h3>
+                <p className="mt-1 hidden sm:block text-xs text-gray-500 line-clamp-2">{service.description}</p>
+                <p className="mt-2 text-[11px] sm:text-xs font-medium text-indigo-600">{service.price}</p>
+                <PrimaryButton className="mt-2 w-full px-2 py-1.5 text-[11px] sm:text-xs">Book</PrimaryButton>
               </Card>
             </Link>
           ))}
@@ -34,19 +34,19 @@ export default function Home() {
       </section>
 
       <section id="other-services">
-        <SectionHeader title="Other Services" subtitle="Explore menu-based services with item-level booking." />
+        <SectionHeader title="Other Services" subtitle="Menu-based services with a rich one-column marketplace list." />
         {otherServices.length === 0 ? (
           <EmptyState title="No other services available yet" description="Admin can publish services from dashboard." />
         ) : (
           <div className="space-y-4">
             {otherServices.map((service) => (
               <Link key={service.id} to={`/other-services/${service.id}`}>
-                <Card className="h-full bg-gradient-to-r from-white to-cyan-50 hover:-translate-y-0.5">
+                <Card className="h-full bg-gradient-to-r from-white to-cyan-50 hover:ring-2 hover:ring-indigo-100">
                   <div className="flex gap-4">
                     {service.imageUrl ? (
-                      <img src={service.imageUrl} alt={service.name} className="h-28 w-36 rounded-lg object-cover" />
+                      <img src={service.imageUrl} alt={service.name} className="h-24 w-28 sm:h-28 sm:w-36 rounded-lg object-cover" />
                     ) : (
-                      <div className="h-28 w-36 rounded-lg bg-gray-100 flex items-center justify-center text-xs text-gray-500">No image</div>
+                      <div className="h-24 w-28 sm:h-28 sm:w-36 rounded-lg bg-gray-100 flex items-center justify-center text-xs text-gray-500">No image</div>
                     )}
                     <div className="min-w-0">
                       <h3 className="font-semibold text-gray-900">{service.name}</h3>
