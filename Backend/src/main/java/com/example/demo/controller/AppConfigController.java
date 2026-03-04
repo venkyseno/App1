@@ -35,7 +35,15 @@ public class AppConfigController {
 
     @GetMapping("/other-services/{id}/items")
     public List<OtherServiceItem> getOtherServiceItems(@PathVariable Long id) {
-        return otherServiceItemRepository.findByOtherServiceId(id);
+        if (!otherServiceRepository.existsById(id)) {
+            return List.of();
+        }
+
+        try {
+            return otherServiceItemRepository.findByOtherServiceId(id);
+        } catch (RuntimeException ex) {
+            return List.of();
+        }
     }
 
     @GetMapping("/coupons")
