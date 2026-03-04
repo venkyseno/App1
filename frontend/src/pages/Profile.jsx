@@ -10,6 +10,7 @@ export default function Profile() {
   const [showWorkerForm, setShowWorkerForm] = useState(false);
   const [showAddress, setShowAddress] = useState(false);
   const [addresses, setAddresses] = useState([]);
+  const [addressForm, setAddressForm] = useState({
   const [newAddress, setNewAddress] = useState({
     addressLine: "",
     city: "",
@@ -96,6 +97,11 @@ export default function Profile() {
 
   const addAddress = async () => {
     await api.post("/user-flow/addresses", {
+      ...addressForm,
+      userId: user.id,
+    });
+
+    setAddressForm({
       ...newAddress,
       userId: user.id,
     });
@@ -220,18 +226,24 @@ export default function Profile() {
           <input
             className="border p-2 w-full mb-2"
             placeholder="Address (mandatory)"
+            value={addressForm.addressLine}
+            onChange={(e) => setAddressForm({ ...addressForm, addressLine: e.target.value })}
             value={newAddress.addressLine}
             onChange={(e) => setNewAddress({ ...newAddress, addressLine: e.target.value })}
           />
           <input
             className="border p-2 w-full mb-2"
             placeholder="City (mandatory)"
+            value={addressForm.city}
+            onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
             value={newAddress.city}
             onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
           />
           <input
             className="border p-2 w-full mb-2"
             placeholder="Landmark"
+            value={addressForm.landmark}
+            onChange={(e) => setAddressForm({ ...addressForm, landmark: e.target.value })}
             value={newAddress.landmark}
             onChange={(e) => setNewAddress({ ...newAddress, landmark: e.target.value })}
           />
@@ -239,6 +251,8 @@ export default function Profile() {
           <label className="text-sm">
             <input
               type="checkbox"
+              checked={addressForm.primaryAddress}
+              onChange={(e) => setAddressForm({ ...addressForm, primaryAddress: e.target.checked })}
               checked={newAddress.primaryAddress}
               onChange={(e) => setNewAddress({ ...newAddress, primaryAddress: e.target.checked })}
             />{" "}
@@ -252,6 +266,11 @@ export default function Profile() {
       )}
 
       {user ? (
+        <button
+          onClick={handleLogout}
+          className="mt-6 w-full bg-red-500 text-white py-3 rounded-xl"
+        >
+          Logout
         <button
           onClick={handleLogout}
           className="mt-6 w-full bg-red-500 text-white py-3 rounded-xl"
