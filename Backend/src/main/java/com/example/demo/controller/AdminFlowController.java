@@ -28,7 +28,6 @@ public class AdminFlowController {
     }
 
     @GetMapping("/banners")
-<<<<<<< codex/implement-dynamic-banner-and-signup-flows-716b5l
     public List<Banner> adminBanners() {
         try {
             return bannerRepository.findAll();
@@ -36,9 +35,6 @@ public class AdminFlowController {
             return List.of();
         }
     }
-=======
-    public List<Banner> adminBanners() { return bannerRepository.findAll(); }
->>>>>>> main
 
     @PostMapping("/banners")
     public Banner saveBanner(@RequestBody Banner banner) {
@@ -66,7 +62,6 @@ public class AdminFlowController {
     public void deleteBanner(@PathVariable Long id) { bannerRepository.deleteById(id); }
 
     @GetMapping("/other-services")
-<<<<<<< codex/implement-dynamic-banner-and-signup-flows-716b5l
     public List<OtherService> adminOtherServices() {
         try {
             return otherServiceRepository.findAll();
@@ -74,9 +69,6 @@ public class AdminFlowController {
             return List.of();
         }
     }
-=======
-    public List<OtherService> adminOtherServices() { return otherServiceRepository.findAll(); }
->>>>>>> main
 
     @PostMapping("/other-services")
     public OtherService saveOtherService(@RequestBody OtherService service) {
