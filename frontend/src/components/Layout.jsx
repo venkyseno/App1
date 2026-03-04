@@ -16,15 +16,12 @@ export default function Layout({ children }) {
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const isAdmin = location.pathname.startsWith("/admin");
-  const title = useMemo(() => {
-    if (isAdmin) return "Admin Control Center";
-    return "Local Services";
-  }, [isAdmin]);
+  const title = useMemo(() => (isAdmin ? "Admin Control Center" : "Local Services"), [isAdmin]);
 
   return (
     <div className="min-h-screen bg-slate-50 text-gray-900">
       <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-16 w-full max-w-[1400px] items-center justify-between px-3 sm:px-4 lg:px-6">
           <div className="flex items-center gap-3">
             {isAdmin && (
               <button className="rounded-lg border border-gray-200 p-2 lg:hidden" onClick={() => setOpen((v) => !v)}>
@@ -44,7 +41,7 @@ export default function Layout({ children }) {
         </div>
       </header>
 
-      <div className={`mx-auto flex w-full max-w-7xl gap-6 px-4 pb-20 pt-6 sm:px-6 lg:px-8 ${isAdmin ? "lg:pb-8" : ""}`}>
+      <div className={`mx-auto flex w-full max-w-[1400px] gap-4 px-3 pb-24 pt-5 sm:px-4 lg:px-6`}>
         {isAdmin && (
           <aside className={`${open ? "block" : "hidden"} lg:block w-full max-w-xs rounded-xl border border-gray-200 bg-white p-3 shadow-sm h-fit`}>
             <p className="px-3 py-2 text-xs font-semibold uppercase text-gray-400">Navigation</p>
@@ -68,7 +65,7 @@ export default function Layout({ children }) {
         <main className="flex-1 min-w-0">{children}</main>
       </div>
 
-      {!isAdmin && <BottomNav />}
+      <BottomNav />
     </div>
   );
 }

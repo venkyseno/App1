@@ -23,5 +23,7 @@ public class Banner {
 
     private String redirectPath;
     private Integer sortOrder;
+    private Integer displaySeconds;
+    private String placement;
     private Boolean active;
 }

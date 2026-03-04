@@ -28,7 +28,6 @@ public class AdminFlowController {
     }
 
     @GetMapping("/banners")
-<<<<<<< codex/implement-dynamic-banner-and-signup-flows-716b5l
     public List<Banner> adminBanners() {
         try {
             return bannerRepository.findAll();
@@ -36,16 +35,14 @@ public class AdminFlowController {
             return List.of();
         }
     }
-=======
-    public List<Banner> adminBanners() { return bannerRepository.findAll(); }
->>>>>>> main
-
     @PostMapping("/banners")
     public Banner saveBanner(@RequestBody Banner banner) {
         if (trimOrEmpty(banner.getTitle()).isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Banner title is required");
         if (trimOrEmpty(banner.getImageUrl()).isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Banner image is required");
         if (banner.getActive() == null) banner.setActive(true);
         if (banner.getSortOrder() == null) banner.setSortOrder(1);
+        if (banner.getDisplaySeconds() == null || banner.getDisplaySeconds() <= 0) banner.setDisplaySeconds(5);
+        if (trimOrEmpty(banner.getPlacement()).isEmpty()) banner.setPlacement("HOME");
         return bannerRepository.save(banner);
     }
 
@@ -58,6 +55,8 @@ public class AdminFlowController {
         banner.setImageUrl(payload.getImageUrl());
         banner.setRedirectPath(payload.getRedirectPath());
         banner.setSortOrder(payload.getSortOrder() == null ? 1 : payload.getSortOrder());
+        banner.setDisplaySeconds(payload.getDisplaySeconds() == null || payload.getDisplaySeconds() <= 0 ? 5 : payload.getDisplaySeconds());
+        banner.setPlacement(trimOrEmpty(payload.getPlacement()).isEmpty() ? "HOME" : payload.getPlacement());
         banner.setActive(payload.getActive() == null ? true : payload.getActive());
         return bannerRepository.save(banner);
     }
@@ -66,7 +65,6 @@ public class AdminFlowController {
     public void deleteBanner(@PathVariable Long id) { bannerRepository.deleteById(id); }
 
     @GetMapping("/other-services")
-<<<<<<< codex/implement-dynamic-banner-and-signup-flows-716b5l
     public List<OtherService> adminOtherServices() {
         try {
             return otherServiceRepository.findAll();
@@ -74,10 +72,6 @@ public class AdminFlowController {
             return List.of();
         }
     }
-=======
-    public List<OtherService> adminOtherServices() { return otherServiceRepository.findAll(); }
->>>>>>> main
-
     @PostMapping("/other-services")
     public OtherService saveOtherService(@RequestBody OtherService service) {
         if (trimOrEmpty(service.getName()).isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Other service name is required");
