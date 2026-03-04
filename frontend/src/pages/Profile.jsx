@@ -191,7 +191,44 @@ export default function Profile() {
         <button onClick={handleLogout} className="mt-6 w-full bg-rose-500 text-white py-3 rounded-xl hover:bg-rose-600 transition">
           Logout
         </button>
+      <ProfileItem label="Addresses" onClick={() => requireLogin(() => { setShowAddress(!showAddress); loadAddresses(); })} />
+      <ProfileItem label="Coupons" onClick={() => requireLogin(() => navigate('/profile/coupons'))} />
+      <ProfileItem label="Orders" onClick={() => navigate("/profile/orders")} />
+      <ProfileItem label="Addresses" onClick={() => { setShowAddress(!showAddress); loadAddresses(); }} />
+      <ProfileItem label="Coupons" onClick={() => {}} />
+      {user?.role === "USER" && <button onClick={() => setShowWorkerForm(!showWorkerForm)} className="mt-4 w-full bg-indigo-600 text-white py-3 rounded-xl">Work with us</button>}
+      {user?.role === "WORKER" && <ProfileItem label="Worker Dashboard" onClick={() => navigate("/worker/dashboard")} />}
+      {user?.role === "ADMIN" && <ProfileItem label="Admin Dashboard" onClick={() => navigate("/admin/dashboard")} />}
+
+      {showWorkerForm && (
+        <div className="bg-white rounded-xl p-4 mt-4 space-y-2">
+          <h3 className="font-semibold">Worker Application</h3>
+          <select className="border p-2 w-full" value={workerForm.workerType} onChange={e => setWorkerForm({ ...workerForm, workerType: e.target.value })}>{workerTypes.map(t => <option key={t}>{t}</option>)}</select>
+          <select className="border p-2 w-full" value={workerForm.experienceLevel} onChange={e => setWorkerForm({ ...workerForm, experienceLevel: e.target.value })}><option>BEGINNER</option><option>INTERMEDIATE</option><option>PROFESSIONAL</option></select>
+          <input className="border p-2 w-full" placeholder="Charge per day" value={workerForm.chargePerDay} onChange={e => setWorkerForm({ ...workerForm, chargePerDay: e.target.value })} />
+          <input className="border p-2 w-full" placeholder="Mobile (mandatory)" value={workerForm.mobile} onChange={e => setWorkerForm({ ...workerForm, mobile: e.target.value })} />
+          <button onClick={submitWorkerRequest} className="bg-green-600 text-white px-4 py-2 rounded">Submit request</button>
+        </div>
       )}
+
+      {showAddress && (
+        <div className="bg-white rounded-xl p-4 mt-4">
+          <h3 className="font-semibold mb-2">Saved addresses</h3>
+          {addresses.map(a => <div key={a.id} className="border rounded p-2 mb-2"><div>{a.addressLine}, {a.city}</div>{a.primaryAddress && <span className="text-xs text-indigo-600">Primary</span>}</div>)}
+          <input className="border p-2 w-full mb-2" placeholder="Address (mandatory)" value={newAddress.addressLine} onChange={e => setNewAddress({ ...newAddress, addressLine: e.target.value })} />
+          <input className="border p-2 w-full mb-2" placeholder="City (mandatory)" value={newAddress.city} onChange={e => setNewAddress({ ...newAddress, city: e.target.value })} />
+          <input className="border p-2 w-full mb-2" placeholder="Landmark" value={newAddress.landmark} onChange={e => setNewAddress({ ...newAddress, landmark: e.target.value })} />
+          <label className="text-sm"><input type="checkbox" checked={newAddress.primaryAddress} onChange={e => setNewAddress({ ...newAddress, primaryAddress: e.target.checked })} /> Set primary</label>
+          <button onClick={addAddress} className="block mt-2 bg-indigo-600 text-white px-4 py-2 rounded">Add new address</button>
+        </div>
+      )}
+
+      {user ? (
+        <button onClick={() => { localStorage.removeItem("user"); setUser(null); navigate("/"); }} className="mt-6 w-full bg-red-500 text-white py-3 rounded-xl">Logout</button>
+      ) : (
+        <button onClick={() => navigate('/login')} className="mt-6 w-full bg-indigo-600 text-white py-3 rounded-xl">Login / Signup</button>
+      )}
+      <button onClick={() => { localStorage.removeItem("user"); setUser(null); navigate("/"); }} className="mt-6 w-full bg-red-500 text-white py-3 rounded-xl">Logout</button>
     </div>
   );
 }
@@ -207,3 +244,4 @@ function ProfileItem({ label, onClick }) {
     </button>
   );
 }
+function ProfileItem({ label, onClick }) { return <div onClick={onClick} className="flex justify-between items-center p-4 bg-white rounded-lg shadow mb-3 cursor-pointer"><span>{label}</span><span className="text-gray-400">›</span></div>; }
