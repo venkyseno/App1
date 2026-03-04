@@ -21,20 +21,40 @@ public class AdminFlowController {
     private final UserRepository userRepository;
     private final ServiceCaseRepository serviceCaseRepository;
 
+    private static String trimOrEmpty(String value) {
+        return value == null ? "" : value.trim();
+    }
+
     @GetMapping("/banners")
     public List<Banner> adminBanners() { return bannerRepository.findAll(); }
 
     @PostMapping("/banners")
-    public Banner saveBanner(@RequestBody Banner banner) { return bannerRepository.save(banner); }
+    public Banner saveBanner(@RequestBody Banner banner) {
+        if (trimOrEmpty(banner.getTitle()).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Banner title is required");
+        }
+        if (trimOrEmpty(banner.getImageUrl()).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Banner image is required");
+        }
+        if (banner.getActive() == null) banner.setActive(true);
+        if (banner.getSortOrder() == null) banner.setSortOrder(1);
+        return bannerRepository.save(banner);
+    }
 
     @PutMapping("/banners/{id}")
     public Banner updateBanner(@PathVariable Long id, @RequestBody Banner payload) {
         Banner banner = bannerRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (trimOrEmpty(payload.getTitle()).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Banner title is required");
+        }
+        if (trimOrEmpty(payload.getImageUrl()).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Banner image is required");
+        }
         banner.setTitle(payload.getTitle());
         banner.setImageUrl(payload.getImageUrl());
         banner.setRedirectPath(payload.getRedirectPath());
-        banner.setSortOrder(payload.getSortOrder());
-        banner.setActive(payload.getActive());
+        banner.setSortOrder(payload.getSortOrder() == null ? 1 : payload.getSortOrder());
+        banner.setActive(payload.getActive() == null ? true : payload.getActive());
         return bannerRepository.save(banner);
     }
 
@@ -45,16 +65,31 @@ public class AdminFlowController {
     public List<OtherService> adminOtherServices() { return otherServiceRepository.findAll(); }
 
     @PostMapping("/other-services")
-    public OtherService saveOtherService(@RequestBody OtherService service) { return otherServiceRepository.save(service); }
+    public OtherService saveOtherService(@RequestBody OtherService service) {
+        if (trimOrEmpty(service.getName()).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Other service name is required");
+        }
+        if (trimOrEmpty(service.getImageUrl()).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Other service image is required");
+        }
+        if (service.getActive() == null) service.setActive(true);
+        return otherServiceRepository.save(service);
+    }
 
     @PutMapping("/other-services/{id}")
     public OtherService updateOtherService(@PathVariable Long id, @RequestBody OtherService payload) {
         OtherService service = otherServiceRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (trimOrEmpty(payload.getName()).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Other service name is required");
+        }
+        if (trimOrEmpty(payload.getImageUrl()).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Other service image is required");
+        }
         service.setName(payload.getName());
         service.setMenuDetails(payload.getMenuDetails());
         service.setImageUrl(payload.getImageUrl());
         service.setStartPrice(payload.getStartPrice());
-        service.setActive(payload.getActive());
+        service.setActive(payload.getActive() == null ? true : payload.getActive());
         return otherServiceRepository.save(service);
     }
 

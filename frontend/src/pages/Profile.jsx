@@ -3,14 +3,12 @@ import { useEffect, useMemo, useState } from "react";
 import api from "../api/api";
 
 const workerTypes = ["Plumber", "Electrician", "Carpenter", "Painter", "Other"];
-
 const INITIAL_ADDRESS_FORM = {
   addressLine: "",
   city: "",
   landmark: "",
   primaryAddress: false,
 };
-
 const INITIAL_WORKER_FORM = {
   workerType: "Plumber",
   experienceLevel: "BEGINNER",
@@ -31,7 +29,6 @@ const parseStoredUser = () => {
 
 export default function Profile() {
   const navigate = useNavigate();
-
   const [user, setUser] = useState(() => parseStoredUser());
   const [showWorkerForm, setShowWorkerForm] = useState(false);
   const [showAddressSection, setShowAddressSection] = useState(false);
@@ -62,7 +59,6 @@ export default function Profile() {
 
   const loadAddresses = async () => {
     if (!user?.id) return;
-
     try {
       const { data } = await api.get(`/user-flow/addresses/${user.id}`);
       setAddresses(data || []);
@@ -115,12 +111,10 @@ export default function Profile() {
 
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto">
-
       <div className="bg-white rounded-2xl p-5 shadow border border-indigo-100 mb-5">
         <p className="text-xs uppercase tracking-wider text-indigo-500">Account</p>
         <h1 className="text-2xl font-bold text-gray-900">{displayName}</h1>
         <p className="text-gray-500 text-sm">{user?.mobile || "Please login to continue"}</p>
-
         <span className="inline-flex mt-2 text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full">
           {user?.role || "GUEST"}
         </span>
@@ -131,20 +125,12 @@ export default function Profile() {
         <ProfileItem label="Addresses" onClick={handleToggleAddresses} />
         <ProfileItem label="Coupons" onClick={() => requireLogin(() => navigate("/profile/coupons"))} />
 
-        {user?.role === "WORKER" && (
-          <ProfileItem label="Worker Dashboard" onClick={() => navigate("/worker/dashboard")} />
-        )}
-
-        {user?.role === "ADMIN" && (
-          <ProfileItem label="Admin Dashboard" onClick={() => navigate("/admin/dashboard")} />
-        )}
+        {user?.role === "WORKER" && <ProfileItem label="Worker Dashboard" onClick={() => navigate("/worker/dashboard")} />}
+        {user?.role === "ADMIN" && <ProfileItem label="Admin Dashboard" onClick={() => navigate("/admin/dashboard")} />}
       </div>
 
       {user?.role === "USER" && (
-        <button
-          onClick={() => setShowWorkerForm((prev) => !prev)}
-          className="mt-4 w-full bg-indigo-600 text-white py-3 rounded-xl hover:bg-indigo-700 transition"
-        >
+        <button onClick={() => setShowWorkerForm((prev) => !prev)} className="mt-4 w-full bg-indigo-600 text-white py-3 rounded-xl hover:bg-indigo-700 transition">
           Work with us
         </button>
       )}
@@ -153,50 +139,20 @@ export default function Profile() {
         <div className="bg-white rounded-2xl p-4 mt-4 shadow border border-gray-100 space-y-2">
           <h3 className="font-semibold text-gray-800">Worker Application</h3>
 
-          <select
-            className="border p-2 w-full rounded"
-            value={workerForm.workerType}
-            onChange={(e) => setWorkerForm({ ...workerForm, workerType: e.target.value })}
-          >
-            {workerTypes.map((type) => (
-              <option key={type}>{type}</option>
-            ))}
+          <select className="border p-2 w-full rounded" value={workerForm.workerType} onChange={(e) => setWorkerForm({ ...workerForm, workerType: e.target.value })}>
+            {workerTypes.map((type) => <option key={type}>{type}</option>)}
           </select>
 
-          <select
-            className="border p-2 w-full rounded"
-            value={workerForm.experienceLevel}
-            onChange={(e) =>
-              setWorkerForm({ ...workerForm, experienceLevel: e.target.value })
-            }
-          >
+          <select className="border p-2 w-full rounded" value={workerForm.experienceLevel} onChange={(e) => setWorkerForm({ ...workerForm, experienceLevel: e.target.value })}>
             <option>BEGINNER</option>
             <option>INTERMEDIATE</option>
             <option>PROFESSIONAL</option>
           </select>
 
-          <input
-            className="border p-2 w-full rounded"
-            placeholder="Charge per day"
-            value={workerForm.chargePerDay}
-            onChange={(e) =>
-              setWorkerForm({ ...workerForm, chargePerDay: e.target.value })
-            }
-          />
+          <input className="border p-2 w-full rounded" placeholder="Charge per day" value={workerForm.chargePerDay} onChange={(e) => setWorkerForm({ ...workerForm, chargePerDay: e.target.value })} />
+          <input className="border p-2 w-full rounded" placeholder="Mobile (mandatory)" value={workerForm.mobile} onChange={(e) => setWorkerForm({ ...workerForm, mobile: e.target.value })} />
 
-          <input
-            className="border p-2 w-full rounded"
-            placeholder="Mobile (mandatory)"
-            value={workerForm.mobile}
-            onChange={(e) =>
-              setWorkerForm({ ...workerForm, mobile: e.target.value })
-            }
-          />
-
-          <button
-            onClick={handleSubmitWorkerRequest}
-            className="bg-emerald-600 text-white px-4 py-2 rounded-lg"
-          >
+          <button onClick={handleSubmitWorkerRequest} className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition">
             Submit request
           </button>
         </div>
@@ -209,71 +165,30 @@ export default function Profile() {
           {addresses.map((address) => (
             <div key={address.id} className="border rounded p-2 mb-2 text-sm">
               <div>{address.addressLine}, {address.city}</div>
-
-              {address.primaryAddress && (
-                <span className="text-xs text-indigo-600">Primary</span>
-              )}
+              {address.primaryAddress && <span className="text-xs text-indigo-600">Primary</span>}
             </div>
           ))}
 
-          <input
-            className="border p-2 w-full mb-2 rounded"
-            placeholder="Address"
-            value={addressForm.addressLine}
-            onChange={(e) =>
-              setAddressForm({ ...addressForm, addressLine: e.target.value })
-            }
-          />
-
-          <input
-            className="border p-2 w-full mb-2 rounded"
-            placeholder="City"
-            value={addressForm.city}
-            onChange={(e) =>
-              setAddressForm({ ...addressForm, city: e.target.value })
-            }
-          />
-
-          <input
-            className="border p-2 w-full mb-2 rounded"
-            placeholder="Landmark"
-            value={addressForm.landmark}
-            onChange={(e) =>
-              setAddressForm({ ...addressForm, landmark: e.target.value })
-            }
-          />
+          <input className="border p-2 w-full mb-2 rounded" placeholder="Address (mandatory)" value={addressForm.addressLine} onChange={(e) => setAddressForm({ ...addressForm, addressLine: e.target.value })} />
+          <input className="border p-2 w-full mb-2 rounded" placeholder="City (mandatory)" value={addressForm.city} onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })} />
+          <input className="border p-2 w-full mb-2 rounded" placeholder="Landmark" value={addressForm.landmark} onChange={(e) => setAddressForm({ ...addressForm, landmark: e.target.value })} />
 
           <label className="text-sm block mb-2">
-            <input
-              type="checkbox"
-              checked={addressForm.primaryAddress}
-              onChange={(e) =>
-                setAddressForm({ ...addressForm, primaryAddress: e.target.checked })
-              }
-            /> Set primary
+            <input type="checkbox" checked={addressForm.primaryAddress} onChange={(e) => setAddressForm({ ...addressForm, primaryAddress: e.target.checked })} /> Set primary
           </label>
 
-          <button
-            onClick={handleAddAddress}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg"
-          >
+          <button onClick={handleAddAddress} className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
             Add new address
           </button>
         </div>
       )}
 
       {!isLoggedIn ? (
-        <button
-          onClick={() => navigate("/login")}
-          className="mt-6 w-full bg-indigo-600 text-white py-3 rounded-xl"
-        >
+        <button onClick={() => navigate("/login")} className="mt-6 w-full bg-indigo-600 text-white py-3 rounded-xl hover:bg-indigo-700 transition">
           Login / Signup
         </button>
       ) : (
-        <button
-          onClick={handleLogout}
-          className="mt-6 w-full bg-rose-500 text-white py-3 rounded-xl"
-        >
+        <button onClick={handleLogout} className="mt-6 w-full bg-rose-500 text-white py-3 rounded-xl hover:bg-rose-600 transition">
           Logout
         </button>
       )}

@@ -6,6 +6,7 @@ import api from "../api/api";
 
 export default function Home() {
   const [otherServices, setOtherServices] = useState([]);
+
   useEffect(() => {
     api.get("/config/other-services").then((r) => setOtherServices(r.data || [])).catch(() => setOtherServices([]));
   }, []);
@@ -25,14 +26,16 @@ export default function Home() {
         ))}
       </div>
 
-      
-
       <h2 className="text-xl font-bold">Other Services</h2>
       <div className="space-y-3">
         {otherServices.map((service) => (
           <Link key={service.id} to="/service/6" className="block bg-white shadow rounded-xl p-3 border">
             <div className="flex gap-3">
-              <img src={service.imageUrl} alt={service.name} className="w-24 h-16 object-cover rounded-lg" />
+              {service.imageUrl ? (
+                <img src={service.imageUrl} alt={service.name} className="w-24 h-16 object-cover rounded-lg" />
+              ) : (
+                <div className="w-24 h-16 rounded-lg bg-gray-100 flex items-center justify-center text-xs text-gray-500">No image</div>
+              )}
               <div>
                 <div className="font-semibold">{service.name}</div>
                 <div className="text-xs text-gray-500">{service.menuDetails}</div>

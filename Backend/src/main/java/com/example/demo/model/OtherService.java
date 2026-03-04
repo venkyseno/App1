@@ -15,10 +15,16 @@ public class OtherService {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String name;
-    @Column(length = 500)
+
+    @Column(length = 1500)
     private String menuDetails;
+
+    @Lob
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String imageUrl;
+
     private String startPrice;
     private Boolean active;
 }

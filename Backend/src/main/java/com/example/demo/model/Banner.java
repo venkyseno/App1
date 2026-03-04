@@ -15,8 +15,13 @@ public class Banner {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String title;
+
+    @Lob
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String imageUrl;
+
     private String redirectPath;
     private Integer sortOrder;
     private Boolean active;
