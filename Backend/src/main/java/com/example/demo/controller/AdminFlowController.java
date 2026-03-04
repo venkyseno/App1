@@ -35,7 +35,6 @@ public class AdminFlowController {
             return List.of();
         }
     }
-
     @PostMapping("/banners")
     public Banner saveBanner(@RequestBody Banner banner) {
         if (trimOrEmpty(banner.getTitle()).isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Banner title is required");
@@ -73,7 +72,6 @@ public class AdminFlowController {
             return List.of();
         }
     }
-
     @PostMapping("/other-services")
     public OtherService saveOtherService(@RequestBody OtherService service) {
         if (trimOrEmpty(service.getName()).isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Other service name is required");
