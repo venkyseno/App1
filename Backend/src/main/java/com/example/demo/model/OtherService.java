@@ -21,7 +21,6 @@ public class OtherService {
     @Column(length = 1500)
     private String menuDetails;
 
-    @Lob
     @Column(columnDefinition = "TEXT", nullable = false)
     private String imageUrl;
 

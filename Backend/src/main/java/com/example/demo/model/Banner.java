@@ -18,7 +18,6 @@ public class Banner {
     @Column(nullable = false)
     private String title;
 
-    @Lob
     @Column(columnDefinition = "TEXT", nullable = false)
     private String imageUrl;
 

@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import api, { uploadFile } from "../../api/api";
+import { services } from "../../data/Services";
 import { Badge, Card, DangerButton, EmptyState, InputField, PageContainer, PrimaryButton, SectionHeader, SelectField, SecondaryButton, TextAreaField } from "../../components/ui";
 
 const EMPTY_BANNER = { title: "", imageUrl: "", redirectType: "SERVICE", targetId: "", redirectPath: "/", sortOrder: 1, active: true };
 const EMPTY_SERVICE = { name: "", menuDetails: "", imageUrl: "", startPrice: "", active: true };
+
 const buildRedirectPath = (type, targetId) => {
   if (type === "ALL_SERVICES") return "/#all-services";
   if (type === "OTHER_SERVICES") return "/#other-services";
@@ -22,26 +24,65 @@ export default function AdminBannersPage() {
   const [serviceForm, setServiceForm] = useState(EMPTY_SERVICE);
   const [editingService, setEditingService] = useState(null);
 
+  const notifyApiError = (err) => alert(err?.response?.data || err?.message || "Request failed");
+
   const load = async () => {
-    const [b, s] = await Promise.all([api.get("/admin/banners"), api.get("/admin/other-services")]);
-    setBanners(b.data || []);
-    setOtherServices(s.data || []);
+    const [bannersRes, otherServicesRes] = await Promise.allSettled([
+      api.get("/admin/banners"),
+      api.get("/admin/other-services"),
+    ]);
+
+    if (bannersRes.status === "fulfilled") {
+      setBanners(bannersRes.value.data || []);
+    } else {
+      setBanners([]);
+      notifyApiError(bannersRes.reason);
+    }
+
+    if (otherServicesRes.status === "fulfilled") {
+      setOtherServices(otherServicesRes.value.data || []);
+    } else {
+      setOtherServices([]);
+      notifyApiError(otherServicesRes.reason);
+    }
   };
 
   useEffect(() => { load(); }, []);
+
   useEffect(() => {
     if (!selectedServiceId) return setItems([]);
-    api.get(`/admin/other-services/${selectedServiceId}/items`).then((r) => setItems(r.data || []));
+    api.get(`/admin/other-services/${selectedServiceId}/items`)
+      .then((r) => setItems(r.data || []))
+      .catch((err) => { setItems([]); notifyApiError(err); });
   }, [selectedServiceId]);
 
-  const notifyApiError = (err) => alert(err?.response?.data || err?.message || "Request failed");
   const redirectPreview = useMemo(() => buildRedirectPath(bannerForm.redirectType, bannerForm.targetId), [bannerForm.redirectType, bannerForm.targetId]);
+
+  const serviceTargetOptions = useMemo(
+    () => services.map((service) => ({ id: String(service.id), label: `${service.id} - ${service.name}` })),
+    [],
+  );
+
+  const otherServiceTargetOptions = useMemo(
+    () => otherServices.map((service) => ({ id: String(service.id), label: `${service.id} - ${service.name}` })),
+    [otherServices],
+  );
 
   const saveBanner = async () => {
     if (!bannerForm.title.trim()) return alert("Banner title is required");
     if (!bannerForm.imageUrl?.trim()) return alert("Banner image is required");
+    if ((bannerForm.redirectType === "SERVICE" || bannerForm.redirectType === "OTHER_SERVICE") && !bannerForm.targetId) {
+      return alert("Please select a target ID for this redirect type");
+    }
+
     try {
-      await api.post("/admin/banners", { title: bannerForm.title, imageUrl: bannerForm.imageUrl, redirectPath: redirectPreview, sortOrder: Number(bannerForm.sortOrder || 1), active: true });
+      await api.post("/admin/banners", {
+        title: bannerForm.title,
+        imageUrl: bannerForm.imageUrl,
+        redirectPath: redirectPreview,
+        sortOrder: Number(bannerForm.sortOrder || 1),
+        active: true,
+      });
       setBannerForm({ ...EMPTY_BANNER, sortOrder: banners.length + 1 });
       load();
     } catch (err) { notifyApiError(err); }
@@ -84,27 +125,57 @@ export default function AdminBannersPage() {
   return (
     <PageContainer title="Banner & Service Management" subtitle="Publish campaigns, attach redirect targets, and manage service menu items.">
       <Card>
-        <SectionHeader title="Create Banner" subtitle="Use redirect type and target ID to bind banners with service pages." />
+        <SectionHeader title="Create Banner" subtitle="Select redirect type, then select exact target ID from available services." />
         <div className="grid gap-3 md:grid-cols-2">
           <InputField label="Title" placeholder="Festival Offer Banner" value={bannerForm.title} onChange={(e) => setBannerForm({ ...bannerForm, title: e.target.value })} />
           <InputField label="Sort order" type="number" value={bannerForm.sortOrder} onChange={(e) => setBannerForm({ ...bannerForm, sortOrder: e.target.value })} />
         </div>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
-          <SelectField label="Redirect Type" value={bannerForm.redirectType} onChange={(e) => setBannerForm({ ...bannerForm, redirectType: e.target.value })}>
+          <SelectField
+            label="Redirect Type"
+            value={bannerForm.redirectType}
+            onChange={(e) => setBannerForm({ ...bannerForm, redirectType: e.target.value, targetId: "" })}
+          >
             <option value="SERVICE">Service page</option>
             <option value="OTHER_SERVICE">Other service page</option>
             <option value="ALL_SERVICES">All services section</option>
             <option value="OTHER_SERVICES">Other services section</option>
           </SelectField>
-          {(bannerForm.redirectType === "SERVICE" || bannerForm.redirectType === "OTHER_SERVICE") && (
-            <InputField label="Target ID" placeholder="e.g. 1" value={bannerForm.targetId} onChange={(e) => setBannerForm({ ...bannerForm, targetId: e.target.value })} />
+
+          {bannerForm.redirectType === "SERVICE" && (
+            <SelectField label="Target ID (Service)" value={bannerForm.targetId} onChange={(e) => setBannerForm({ ...bannerForm, targetId: e.target.value })}>
+              <option value="">Select service</option>
+              {serviceTargetOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+            </SelectField>
+          )}
+
+          {bannerForm.redirectType === "OTHER_SERVICE" && (
+            <SelectField label="Target ID (Other Service)" value={bannerForm.targetId} onChange={(e) => setBannerForm({ ...bannerForm, targetId: e.target.value })}>
+              <option value="">Select other service</option>
+              {otherServiceTargetOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+            </SelectField>
           )}
         </div>
-        <div className="mt-3 rounded-lg bg-indigo-50 px-3 py-2 text-sm">Redirect preview: <span className="font-medium text-indigo-700">{redirectPreview}</span></div>
+
+        <div className="mt-3 rounded-lg bg-indigo-50 px-3 py-2 text-sm text-indigo-900">
+          <p className="font-medium">Target ID Guide</p>
+          <ul className="mt-1 list-disc pl-5 text-xs text-indigo-800">
+            <li><b>Service page</b>: choose one ID from fixed home services list (e.g., 1 - Electrician).</li>
+            <li><b>Other service page</b>: choose one ID from published Other Services.</li>
+            <li><b>All services/Other services</b>: no target ID needed; redirects to section anchors.</li>
+          </ul>
+          <p className="mt-2">Redirect preview: <span className="font-semibold">{redirectPreview}</span></p>
+        </div>
+
         <div className="mt-3 flex items-center gap-3">
           <input type="file" accept="image/*" className="block w-full text-sm" onChange={async (e) => {
-            try { const file = e.target.files?.[0]; if (!file) return; if (file.size > 20 * 1024 * 1024) return alert("File must be below 20MB"); const imageUrl = await uploadFile(file); setBannerForm((prev) => ({ ...prev, imageUrl })); }
-            catch (err) { notifyApiError(err); }
+            try {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              if (file.size > 20 * 1024 * 1024) return alert("File must be below 20MB");
+              const imageUrl = await uploadFile(file);
+              setBannerForm((prev) => ({ ...prev, imageUrl }));
+            } catch (err) { notifyApiError(err); }
           }} />
           <PrimaryButton onClick={saveBanner}>Publish Banner</PrimaryButton>
         </div>
@@ -120,8 +191,13 @@ export default function AdminBannersPage() {
         <TextAreaField label="Description" className="mt-3" value={serviceForm.menuDetails} onChange={(e) => setServiceForm({ ...serviceForm, menuDetails: e.target.value })} />
         <div className="mt-3 flex items-center gap-3">
           <input type="file" accept="image/*" className="block w-full text-sm" onChange={async (e) => {
-            try { const file = e.target.files?.[0]; if (!file) return; if (file.size > 20 * 1024 * 1024) return alert("File must be below 20MB"); const imageUrl = await uploadFile(file); setServiceForm((prev) => ({ ...prev, imageUrl })); }
-            catch (err) { notifyApiError(err); }
+            try {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              if (file.size > 20 * 1024 * 1024) return alert("File must be below 20MB");
+              const imageUrl = await uploadFile(file);
+              setServiceForm((prev) => ({ ...prev, imageUrl }));
+            } catch (err) { notifyApiError(err); }
           }} />
           <PrimaryButton onClick={saveOtherService}>Publish Service</PrimaryButton>
         </div>
@@ -135,7 +211,7 @@ export default function AdminBannersPage() {
             {otherServices.map((s) => (
               <div key={s.id} className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
                 <div>
-                  <p className="font-medium text-gray-900">{s.name}</p>
+                  <p className="font-medium text-gray-900">#{s.id} - {s.name}</p>
                   <p className="text-xs text-gray-500">{s.menuDetails}</p>
                 </div>
                 <div className="flex gap-2">
@@ -158,8 +234,12 @@ export default function AdminBannersPage() {
           <TextAreaField label="Description" className="mt-3" value={editingService.menuDetails || ""} onChange={(e) => setEditingService({ ...editingService, menuDetails: e.target.value })} />
           <div className="mt-3 flex items-center gap-3">
             <input type="file" accept="image/*" className="block w-full text-sm" onChange={async (e) => {
-              try { const file = e.target.files?.[0]; if (!file) return; const imageUrl = await uploadFile(file); setEditingService((prev) => ({ ...prev, imageUrl })); }
-              catch (err) { notifyApiError(err); }
+              try {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const imageUrl = await uploadFile(file);
+                setEditingService((prev) => ({ ...prev, imageUrl }));
+              } catch (err) { notifyApiError(err); }
             }} />
             <PrimaryButton onClick={updateService}>Save Service</PrimaryButton>
           </div>
@@ -176,7 +256,11 @@ export default function AdminBannersPage() {
               {items.map((item) => (
                 <div key={item.id} className="flex items-center justify-between rounded-lg border border-gray-200 p-2 text-sm">
                   <span>{item.name} • ₹{item.price} • Qty {item.availableQuantity}</span>
-                  <DangerButton onClick={async () => { await api.delete(`/admin/other-services/items/${item.id}`); const res = await api.get(`/admin/other-services/${selectedServiceId}/items`); setItems(res.data || []); }}>Delete</DangerButton>
+                  <DangerButton onClick={async () => {
+                    await api.delete(`/admin/other-services/items/${item.id}`);
+                    const res = await api.get(`/admin/other-services/${selectedServiceId}/items`);
+                    setItems(res.data || []);
+                  }}>Delete</DangerButton>
                 </div>
               ))}
             </div>
