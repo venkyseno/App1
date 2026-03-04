@@ -3,6 +3,18 @@ import { useEffect, useState } from "react";
 import api from "../api/api";
 
 const workerTypes = ["Plumber", "Electrician", "Carpenter", "Painter", "Other"];
+const INITIAL_ADDRESS_FORM = {
+  addressLine: "",
+  city: "",
+  landmark: "",
+  primaryAddress: false,
+};
+const INITIAL_WORKER_FORM = {
+  workerType: "Plumber",
+  experienceLevel: "BEGINNER",
+  chargePerDay: "",
+  mobile: "",
+};
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -10,6 +22,8 @@ export default function Profile() {
   const [showWorkerForm, setShowWorkerForm] = useState(false);
   const [showAddress, setShowAddress] = useState(false);
   const [addresses, setAddresses] = useState([]);
+  const [addressForm, setAddressForm] = useState(INITIAL_ADDRESS_FORM);
+  const [workerForm, setWorkerForm] = useState(INITIAL_WORKER_FORM);
   const [addressForm, setAddressForm] = useState({
   const [newAddress, setNewAddress] = useState({
     addressLine: "",
@@ -89,6 +103,9 @@ export default function Profile() {
       mobile: workerForm.mobile || user.mobile,
     });
 
+    alert("Worker request submitted");
+    setShowWorkerForm(false);
+    setWorkerForm(INITIAL_WORKER_FORM);
     if (!workerForm.mobile) return alert("Mobile is mandatory");
     await api.post("/user-flow/worker-apply", { ...workerForm, userId: user.id, mobile: workerForm.mobile || user.mobile });
     alert("Worker request submitted");
@@ -101,6 +118,7 @@ export default function Profile() {
       userId: user.id,
     });
 
+    setAddressForm(INITIAL_ADDRESS_FORM);
     setAddressForm({
       ...newAddress,
       userId: user.id,
@@ -142,6 +160,42 @@ export default function Profile() {
       {user && <div className="mb-4 p-4 bg-white rounded-xl"><p className="font-semibold">{user.name}</p><p>{user.mobile}</p><span className="text-xs bg-blue-100 px-2 rounded">{user.role}</span></div>}
       <h1 className="text-xl font-bold mb-3">My Account</h1>
       <ProfileItem label="Orders" onClick={() => requireLogin(() => navigate("/profile/orders"))} />
+      <ProfileItem label="Addresses" onClick={() => requireLogin(handleToggleAddresses)} />
+      <ProfileItem label="Coupons" onClick={() => requireLogin(() => navigate("/profile/coupons"))} />
+
+      {user?.role === "USER" && (
+        <button onClick={() => setShowWorkerForm(!showWorkerForm)} className="mt-4 w-full bg-indigo-600 text-white py-3 rounded-xl">
+          Work with us
+        </button>
+      )}
+
+      {user?.role === "WORKER" && <ProfileItem label="Worker Dashboard" onClick={() => navigate("/worker/dashboard")} />}
+      {user?.role === "ADMIN" && <ProfileItem label="Admin Dashboard" onClick={() => navigate("/admin/dashboard")} />}
+
+      {showWorkerForm && (
+        <div className="bg-white rounded-xl p-4 mt-4 space-y-2">
+          <h3 className="font-semibold">Worker Application</h3>
+          <select className="border p-2 w-full" value={workerForm.workerType} onChange={(e) => setWorkerForm({ ...workerForm, workerType: e.target.value })}>
+            {workerTypes.map((type) => (
+              <option key={type}>{type}</option>
+            ))}
+          </select>
+
+          <select className="border p-2 w-full" value={workerForm.experienceLevel} onChange={(e) => setWorkerForm({ ...workerForm, experienceLevel: e.target.value })}>
+            <option>BEGINNER</option>
+            <option>INTERMEDIATE</option>
+            <option>PROFESSIONAL</option>
+          </select>
+
+          <input className="border p-2 w-full" placeholder="Charge per day" value={workerForm.chargePerDay} onChange={(e) => setWorkerForm({ ...workerForm, chargePerDay: e.target.value })} />
+          <input className="border p-2 w-full" placeholder="Mobile (mandatory)" value={workerForm.mobile} onChange={(e) => setWorkerForm({ ...workerForm, mobile: e.target.value })} />
+
+          <button onClick={submitWorkerRequest} className="bg-green-600 text-white px-4 py-2 rounded">
+            Submit request
+          </button>
+        </div>
+      )}
+
       <ProfileItem
         label="Addresses"
         onClick={() => requireLogin(handleToggleAddresses)}
@@ -216,6 +270,7 @@ export default function Profile() {
 
           {addresses.map((address) => (
             <div key={address.id} className="border rounded p-2 mb-2">
+              <div>{address.addressLine}, {address.city}</div>
               <div>
                 {address.addressLine}, {address.city}
               </div>
@@ -223,6 +278,12 @@ export default function Profile() {
             </div>
           ))}
 
+          <input className="border p-2 w-full mb-2" placeholder="Address (mandatory)" value={addressForm.addressLine} onChange={(e) => setAddressForm({ ...addressForm, addressLine: e.target.value })} />
+          <input className="border p-2 w-full mb-2" placeholder="City (mandatory)" value={addressForm.city} onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })} />
+          <input className="border p-2 w-full mb-2" placeholder="Landmark" value={addressForm.landmark} onChange={(e) => setAddressForm({ ...addressForm, landmark: e.target.value })} />
+
+          <label className="text-sm">
+            <input type="checkbox" checked={addressForm.primaryAddress} onChange={(e) => setAddressForm({ ...addressForm, primaryAddress: e.target.checked })} /> Set primary
           <input
             className="border p-2 w-full mb-2"
             placeholder="Address (mandatory)"
@@ -266,6 +327,9 @@ export default function Profile() {
       )}
 
       {user ? (
+        <button onClick={handleLogout} className="mt-6 w-full bg-red-500 text-white py-3 rounded-xl">Logout</button>
+      ) : (
+        <button onClick={() => navigate("/login")} className="mt-6 w-full bg-indigo-600 text-white py-3 rounded-xl">Login / Signup</button>
         <button
           onClick={handleLogout}
           className="mt-6 w-full bg-red-500 text-white py-3 rounded-xl"
@@ -335,6 +399,7 @@ export default function Profile() {
 
 function ProfileItem({ label, onClick }) {
   return (
+    <div onClick={onClick} className="flex justify-between items-center p-4 bg-white rounded-lg shadow mb-3 cursor-pointer">
     <div
       onClick={onClick}
       className="flex justify-between items-center p-4 bg-white rounded-lg shadow mb-3 cursor-pointer"
