@@ -1,77 +1,194 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import api from "../api/api";
+
+const workerTypes = ["Plumber", "Electrician", "Carpenter", "Painter", "Other"];
+const INITIAL_ADDRESS_FORM = {
+  addressLine: "",
+  city: "",
+  landmark: "",
+  primaryAddress: false,
+};
+const INITIAL_WORKER_FORM = {
+  workerType: "Plumber",
+  experienceLevel: "BEGINNER",
+  chargePerDay: "",
+  mobile: "",
+};
+
+const parseStoredUser = () => {
+  const raw = localStorage.getItem("user");
+  if (!raw || raw === "undefined" || raw === "null") return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    localStorage.removeItem("user");
+    return null;
+  }
+};
 
 export default function Profile() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => parseStoredUser());
+  const [showWorkerForm, setShowWorkerForm] = useState(false);
+  const [showAddressSection, setShowAddressSection] = useState(false);
+  const [addresses, setAddresses] = useState([]);
+  const [addressForm, setAddressForm] = useState(INITIAL_ADDRESS_FORM);
+  const [workerForm, setWorkerForm] = useState(INITIAL_WORKER_FORM);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser && storedUser !== "undefined") {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch {
-        localStorage.removeItem("user");
-      }
-    }
+    const syncUser = () => setUser(parseStoredUser());
+    window.addEventListener("storage", syncUser);
+    return () => window.removeEventListener("storage", syncUser);
   }, []);
 
+  const isLoggedIn = !!user?.id;
+
+  const displayName = useMemo(() => {
+    if (!user) return "Guest";
+    return user.name || "User";
+  }, [user]);
+
   const requireLogin = (callback) => {
-    if (!user) navigate("/login");
-    else callback();
+    if (!isLoggedIn) {
+      navigate("/login");
+      return;
+    }
+    callback();
+  };
+
+  const loadAddresses = async () => {
+    if (!user?.id) return;
+    try {
+      const { data } = await api.get(`/user-flow/addresses/${user.id}`);
+      setAddresses(data || []);
+    } catch {
+      setAddresses([]);
+    }
+  };
+
+  const handleToggleAddresses = () => {
+    requireLogin(async () => {
+      await loadAddresses();
+      setShowAddressSection((prev) => !prev);
+    });
+  };
+
+  const handleAddAddress = async () => {
+    if (!addressForm.addressLine.trim()) return alert("Address is mandatory");
+    if (!addressForm.city.trim()) return alert("City is mandatory");
+
+    await api.post("/user-flow/addresses", {
+      ...addressForm,
+      userId: user.id,
+    });
+
+    setAddressForm(INITIAL_ADDRESS_FORM);
+    loadAddresses();
+  };
+
+  const handleSubmitWorkerRequest = async () => {
+    if (!workerForm.mobile.trim()) return alert("Mobile is mandatory");
+
+    await api.post("/user-flow/worker-apply", {
+      ...workerForm,
+      userId: user.id,
+      mobile: workerForm.mobile || user.mobile,
+    });
+
+    alert("Worker request submitted");
+    setWorkerForm(INITIAL_WORKER_FORM);
+    setShowWorkerForm(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+    setShowAddressSection(false);
+    setShowWorkerForm(false);
+    navigate("/");
   };
 
   return (
-    <div className="p-6">
-      {/* User Info Header */}
-      {user && (
-        <div className="flex items-center gap-3 mb-6 p-4 bg-white rounded-xl shadow">
-          <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center text-lg font-bold text-gray-600">
-            {user.name?.charAt(0).toUpperCase()}
-          </div>
-          <div>
-            <p className="font-semibold text-lg">{user.name}</p>
-            <p className="text-sm text-gray-500">{user.mobile}</p>
-            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{user.role}</span>
-          </div>
+    <div className="p-4 md:p-6 max-w-2xl mx-auto">
+      <div className="bg-white rounded-2xl p-5 shadow border border-indigo-100 mb-5">
+        <p className="text-xs uppercase tracking-wider text-indigo-500">Account</p>
+        <h1 className="text-2xl font-bold text-gray-900">{displayName}</h1>
+        <p className="text-gray-500 text-sm">{user?.mobile || "Please login to continue"}</p>
+        <span className="inline-flex mt-2 text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full">
+          {user?.role || "GUEST"}
+        </span>
+      </div>
+
+      <div className="space-y-3">
+        <ProfileItem label="Orders" onClick={() => requireLogin(() => navigate("/profile/orders"))} />
+        <ProfileItem label="Addresses" onClick={handleToggleAddresses} />
+        <ProfileItem label="Coupons" onClick={() => requireLogin(() => navigate("/profile/coupons"))} />
+
+        {user?.role === "WORKER" && <ProfileItem label="Worker Dashboard" onClick={() => navigate("/worker/dashboard")} />}
+        {user?.role === "ADMIN" && <ProfileItem label="Admin Dashboard" onClick={() => navigate("/admin/dashboard")} />}
+      </div>
+
+      {user?.role === "USER" && (
+        <button onClick={() => setShowWorkerForm((prev) => !prev)} className="mt-4 w-full bg-indigo-600 text-white py-3 rounded-xl hover:bg-indigo-700 transition">
+          Work with us
+        </button>
+      )}
+
+      {showWorkerForm && (
+        <div className="bg-white rounded-2xl p-4 mt-4 shadow border border-gray-100 space-y-2">
+          <h3 className="font-semibold text-gray-800">Worker Application</h3>
+
+          <select className="border p-2 w-full rounded" value={workerForm.workerType} onChange={(e) => setWorkerForm({ ...workerForm, workerType: e.target.value })}>
+            {workerTypes.map((type) => <option key={type}>{type}</option>)}
+          </select>
+
+          <select className="border p-2 w-full rounded" value={workerForm.experienceLevel} onChange={(e) => setWorkerForm({ ...workerForm, experienceLevel: e.target.value })}>
+            <option>BEGINNER</option>
+            <option>INTERMEDIATE</option>
+            <option>PROFESSIONAL</option>
+          </select>
+
+          <input className="border p-2 w-full rounded" placeholder="Charge per day" value={workerForm.chargePerDay} onChange={(e) => setWorkerForm({ ...workerForm, chargePerDay: e.target.value })} />
+          <input className="border p-2 w-full rounded" placeholder="Mobile (mandatory)" value={workerForm.mobile} onChange={(e) => setWorkerForm({ ...workerForm, mobile: e.target.value })} />
+
+          <button onClick={handleSubmitWorkerRequest} className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition">
+            Submit request
+          </button>
         </div>
       )}
 
-      <h1 className="text-xl font-bold mb-3">My Account</h1>
+      {showAddressSection && (
+        <div className="bg-white rounded-2xl p-4 mt-4 shadow border border-gray-100">
+          <h3 className="font-semibold mb-2">Saved addresses</h3>
 
-      <ProfileItem label="Orders" onClick={() => requireLogin(() => navigate("/profile/orders"))} />
-      <ProfileItem label="Wallet (Cashback)" onClick={() => requireLogin(() => navigate("/profile/wallet"))} />
-      <ProfileItem label="Addresses" onClick={() => requireLogin(() => {})} />
-      <ProfileItem label="Coupons" onClick={() => requireLogin(() => {})} />
-      <ProfileItem label="Help" onClick={() => {}} />
+          {addresses.map((address) => (
+            <div key={address.id} className="border rounded p-2 mb-2 text-sm">
+              <div>{address.addressLine}, {address.city}</div>
+              {address.primaryAddress && <span className="text-xs text-indigo-600">Primary</span>}
+            </div>
+          ))}
 
-      {/* Only show Worker Dashboard if role is WORKER */}
-      {user?.role === "WORKER" && (
-        <ProfileItem label="Worker Dashboard" onClick={() => navigate("/worker/dashboard")} />
+          <input className="border p-2 w-full mb-2 rounded" placeholder="Address (mandatory)" value={addressForm.addressLine} onChange={(e) => setAddressForm({ ...addressForm, addressLine: e.target.value })} />
+          <input className="border p-2 w-full mb-2 rounded" placeholder="City (mandatory)" value={addressForm.city} onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })} />
+          <input className="border p-2 w-full mb-2 rounded" placeholder="Landmark" value={addressForm.landmark} onChange={(e) => setAddressForm({ ...addressForm, landmark: e.target.value })} />
+
+          <label className="text-sm block mb-2">
+            <input type="checkbox" checked={addressForm.primaryAddress} onChange={(e) => setAddressForm({ ...addressForm, primaryAddress: e.target.checked })} /> Set primary
+          </label>
+
+          <button onClick={handleAddAddress} className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
+            Add new address
+          </button>
+        </div>
       )}
 
-      {/* Only show Admin Dashboard if role is ADMIN */}
-      {user?.role === "ADMIN" && (
-        <ProfileItem label="Admin Dashboard" onClick={() => navigate("/admin/dashboard")} />
-      )}
-
-      {/* Login / Logout */}
-      {!user ? (
-        <button
-          onClick={() => navigate("/login")}
-          className="mt-6 w-full bg-blue-600 text-white py-3 rounded-xl"
-        >
-          Login
+      {!isLoggedIn ? (
+        <button onClick={() => navigate("/login")} className="mt-6 w-full bg-indigo-600 text-white py-3 rounded-xl hover:bg-indigo-700 transition">
+          Login / Signup
         </button>
       ) : (
-        <button
-          onClick={() => {
-            localStorage.removeItem("user");
-            setUser(null);
-            navigate("/");
-          }}
-          className="mt-6 w-full bg-red-500 text-white py-3 rounded-xl"
-        >
+        <button onClick={handleLogout} className="mt-6 w-full bg-rose-500 text-white py-3 rounded-xl hover:bg-rose-600 transition">
           Logout
         </button>
       )}
@@ -81,12 +198,12 @@ export default function Profile() {
 
 function ProfileItem({ label, onClick }) {
   return (
-    <div
+    <button
       onClick={onClick}
-      className="flex justify-between items-center p-4 bg-white rounded-lg shadow mb-3 cursor-pointer hover:bg-gray-50 active:bg-gray-100"
+      className="w-full flex justify-between items-center p-4 bg-white rounded-xl shadow border border-gray-100 hover:bg-gray-50 transition"
     >
-      <span>{label}</span>
+      <span className="text-gray-800">{label}</span>
       <span className="text-gray-400">›</span>
-    </div>
+    </button>
   );
 }
