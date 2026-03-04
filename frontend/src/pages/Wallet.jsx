@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getWallet, getLedger } from "../api/api";
 import { useNavigate } from "react-router-dom";
+import { Badge, Card, EmptyState, PageContainer, PrimaryButton } from "../components/ui";
 
 export default function Wallet() {
   const [wallet, setWallet] = useState(null);
@@ -9,45 +10,32 @@ export default function Wallet() {
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user") || "null");
-    if (!user) {
-      navigate("/login");
-      return;
-    }
-
+    if (!user) return navigate("/login");
     getWallet(user.id).then((res) => setWallet(res.data));
     getLedger(user.id).then((res) => setLedger(res.data));
   }, [navigate]);
 
   return (
-    <div className="p-4 space-y-4">
-      <h2 className="text-xl font-bold">Wallet</h2>
+    <PageContainer title="Wallet" subtitle="Review cashback balance and transaction history.">
+      <Card className="soft-panel">
+        <p className="text-sm text-gray-500">Cashback Balance</p>
+        <p className="mt-1 text-3xl font-semibold">₹{wallet?.balance ?? "—"}</p>
+        <PrimaryButton className="mt-3" onClick={() => navigate("/profile/withdraw")}>Withdraw</PrimaryButton>
+      </Card>
 
-      <div className="bg-white rounded-xl shadow p-4">
-        <p className="text-gray-500 text-sm">Cashback Balance</p>
-        <p className="text-3xl font-bold mt-1">
-          ₹{wallet?.balance ?? "—"}
-        </p>
-        <button
-          onClick={() => navigate("/profile/withdraw")}
-          className="mt-3 bg-black text-white px-4 py-2 rounded-lg text-sm"
-        >
-          Withdraw
-        </button>
-      </div>
-
-      <h3 className="text-lg font-semibold">Transaction History</h3>
-      {ledger.length === 0 ? (
-        <p className="text-gray-500">No transactions yet.</p>
-      ) : (
-        ledger.map((entry) => (
-          <div key={entry.id} className="bg-white rounded-xl shadow p-3 flex justify-between">
-            <span className="text-sm text-gray-600">{entry.type}</span>
-            <span className={entry.type === "CREDIT" ? "text-green-600 font-semibold" : "text-red-500 font-semibold"}>
-              {entry.type === "CREDIT" ? "+" : "-"}₹{entry.amount}
-            </span>
+      <Card>
+        <h3 className="text-lg font-medium">Transaction History</h3>
+        {ledger.length === 0 ? <EmptyState title="No transactions yet" /> : (
+          <div className="mt-3 space-y-2">
+            {ledger.map((entry) => (
+              <div key={entry.id} className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
+                <span className="text-sm text-gray-600">{entry.type}</span>
+                <Badge tone={entry.type === "CREDIT" ? "green" : "red"}>{entry.type === "CREDIT" ? "+" : "-"}₹{entry.amount}</Badge>
+              </div>
+            ))}
           </div>
-        ))
-      )}
-    </div>
+        )}
+      </Card>
+    </PageContainer>
   );
 }
