@@ -1,10 +1,32 @@
 package com.example.demo.controller;
 
-import com.example.demo.model.*;
-import com.example.demo.repository.*;
-import lombok.RequiredArgsConstructor;
+import com.example.demo.model.Banner;
+import com.example.demo.model.Coupon;
+import com.example.demo.model.OtherService;
+import com.example.demo.model.OtherServiceItem;
+import com.example.demo.model.OtherServiceOrder;
+import com.example.demo.model.ServiceCase;
+import com.example.demo.model.User;
+import com.example.demo.model.UserRole;
+import com.example.demo.model.WorkerApplication;
+import com.example.demo.repository.BannerRepository;
+import com.example.demo.repository.CouponRepository;
+import com.example.demo.repository.OtherServiceItemRepository;
+import com.example.demo.repository.OtherServiceOrderRepository;
+import com.example.demo.repository.OtherServiceRepository;
+import com.example.demo.repository.ServiceCaseRepository;
+import com.example.demo.repository.UserRepository;
+import com.example.demo.repository.WorkerApplicationRepository;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -12,8 +34,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin")
 @CrossOrigin
-@RequiredArgsConstructor
 public class AdminFlowController {
+
     private final BannerRepository bannerRepository;
     private final OtherServiceRepository otherServiceRepository;
     private final OtherServiceItemRepository otherServiceItemRepository;
@@ -22,6 +44,26 @@ public class AdminFlowController {
     private final WorkerApplicationRepository workerApplicationRepository;
     private final UserRepository userRepository;
     private final ServiceCaseRepository serviceCaseRepository;
+
+    public AdminFlowController(
+            BannerRepository bannerRepository,
+            OtherServiceRepository otherServiceRepository,
+            OtherServiceItemRepository otherServiceItemRepository,
+            OtherServiceOrderRepository otherServiceOrderRepository,
+            CouponRepository couponRepository,
+            WorkerApplicationRepository workerApplicationRepository,
+            UserRepository userRepository,
+            ServiceCaseRepository serviceCaseRepository
+    ) {
+        this.bannerRepository = bannerRepository;
+        this.otherServiceRepository = otherServiceRepository;
+        this.otherServiceItemRepository = otherServiceItemRepository;
+        this.otherServiceOrderRepository = otherServiceOrderRepository;
+        this.couponRepository = couponRepository;
+        this.workerApplicationRepository = workerApplicationRepository;
+        this.userRepository = userRepository;
+        this.serviceCaseRepository = serviceCaseRepository;
+    }
 
     private static String trimOrEmpty(String value) {
         return value == null ? "" : value.trim();
@@ -35,10 +77,28 @@ public class AdminFlowController {
             return List.of();
         }
     }
-<<<<<<< HEAD
 
-=======
->>>>>>> 6f812297fff7ec52a497cc4b6b5df951cb70495c
+    @PostMapping("/banners")
+    public Banner saveBanner(@RequestBody Banner banner) {
+        if (trimOrEmpty(banner.getTitle()).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Banner title is required");
+        }
+        if (trimOrEmpty(banner.getImageUrl()).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Banner image is required");
+        }
+        if (banner.getActive() == null) {
+            banner.setActive(true);
+        }
+        if (banner.getSortOrder() == null) {
+            banner.setSortOrder(1);
+        }
+        if (banner.getDisplaySeconds() == null || banner.getDisplaySeconds() <= 0) {
+            banner.setDisplaySeconds(5);
+        }
+        if (trimOrEmpty(banner.getPlacement()).isEmpty()) {
+            banner.setPlacement("HOME");
+        }
+
     @PostMapping("/banners")
     public Banner saveBanner(@RequestBody Banner banner) {
         if (trimOrEmpty(banner.getTitle()).isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Banner title is required");
@@ -52,21 +112,30 @@ public class AdminFlowController {
 
     @PutMapping("/banners/{id}")
     public Banner updateBanner(@PathVariable Long id, @RequestBody Banner payload) {
-        Banner banner = bannerRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        if (trimOrEmpty(payload.getTitle()).isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Banner title is required");
-        if (trimOrEmpty(payload.getImageUrl()).isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Banner image is required");
+        Banner banner = bannerRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        if (trimOrEmpty(payload.getTitle()).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Banner title is required");
+        }
+        if (trimOrEmpty(payload.getImageUrl()).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Banner image is required");
+        }
+
         banner.setTitle(payload.getTitle());
         banner.setImageUrl(payload.getImageUrl());
         banner.setRedirectPath(payload.getRedirectPath());
         banner.setSortOrder(payload.getSortOrder() == null ? 1 : payload.getSortOrder());
         banner.setDisplaySeconds(payload.getDisplaySeconds() == null || payload.getDisplaySeconds() <= 0 ? 5 : payload.getDisplaySeconds());
         banner.setPlacement(trimOrEmpty(payload.getPlacement()).isEmpty() ? "HOME" : payload.getPlacement());
-        banner.setActive(payload.getActive() == null ? true : payload.getActive());
+        banner.setActive(payload.getActive() == null || payload.getActive());
         return bannerRepository.save(banner);
     }
 
     @DeleteMapping("/banners/{id}")
-    public void deleteBanner(@PathVariable Long id) { bannerRepository.deleteById(id); }
+    public void deleteBanner(@PathVariable Long id) {
+        bannerRepository.deleteById(id);
+    }
 
     @GetMapping("/other-services")
     public List<OtherService> adminOtherServices() {
@@ -76,10 +145,19 @@ public class AdminFlowController {
             return List.of();
         }
     }
-<<<<<<< HEAD
 
-=======
->>>>>>> 6f812297fff7ec52a497cc4b6b5df951cb70495c
+    @PostMapping("/other-services")
+    public OtherService saveOtherService(@RequestBody OtherService service) {
+        if (trimOrEmpty(service.getName()).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Other service name is required");
+        }
+        if (trimOrEmpty(service.getImageUrl()).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Other service image is required");
+        }
+        if (service.getActive() == null) {
+            service.setActive(true);
+        }
+
     @PostMapping("/other-services")
     public OtherService saveOtherService(@RequestBody OtherService service) {
         if (trimOrEmpty(service.getName()).isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Other service name is required");
@@ -90,19 +168,28 @@ public class AdminFlowController {
 
     @PutMapping("/other-services/{id}")
     public OtherService updateOtherService(@PathVariable Long id, @RequestBody OtherService payload) {
-        OtherService service = otherServiceRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        if (trimOrEmpty(payload.getName()).isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Other service name is required");
-        if (trimOrEmpty(payload.getImageUrl()).isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Other service image is required");
+        OtherService service = otherServiceRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        if (trimOrEmpty(payload.getName()).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Other service name is required");
+        }
+        if (trimOrEmpty(payload.getImageUrl()).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Other service image is required");
+        }
+
         service.setName(payload.getName());
         service.setMenuDetails(payload.getMenuDetails());
         service.setImageUrl(payload.getImageUrl());
         service.setStartPrice(payload.getStartPrice());
-        service.setActive(payload.getActive() == null ? true : payload.getActive());
+        service.setActive(payload.getActive() == null || payload.getActive());
         return otherServiceRepository.save(service);
     }
 
     @DeleteMapping("/other-services/{id}")
-    public void deleteOtherService(@PathVariable Long id) { otherServiceRepository.deleteById(id); }
+    public void deleteOtherService(@PathVariable Long id) {
+        otherServiceRepository.deleteById(id);
+    }
 
     @GetMapping("/other-services/{id}/items")
     public List<OtherServiceItem> getOtherServiceItems(@PathVariable Long id) {
@@ -111,9 +198,15 @@ public class AdminFlowController {
 
     @PostMapping("/other-services/{id}/items")
     public OtherServiceItem addOtherServiceItem(@PathVariable Long id, @RequestBody OtherServiceItem item) {
-        if (trimOrEmpty(item.getName()).isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Item name is required");
-        if (item.getPrice() == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Item price is required");
-        if (item.getAvailableQuantity() == null || item.getAvailableQuantity() < 0) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Item quantity is required");
+        if (trimOrEmpty(item.getName()).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Item name is required");
+        }
+        if (item.getPrice() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Item price is required");
+        }
+        if (item.getAvailableQuantity() == null || item.getAvailableQuantity() < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Item quantity is required");
+        }
         item.setOtherServiceId(id);
         return otherServiceItemRepository.save(item);
     }
@@ -129,14 +222,20 @@ public class AdminFlowController {
     }
 
     @GetMapping("/coupons")
-    public List<Coupon> adminCoupons() { return couponRepository.findAll(); }
+    public List<Coupon> adminCoupons() {
+        return couponRepository.findAll();
+    }
 
     @PostMapping("/coupons")
-    public Coupon saveCoupon(@RequestBody Coupon coupon) { return couponRepository.save(coupon); }
+    public Coupon saveCoupon(@RequestBody Coupon coupon) {
+        return couponRepository.save(coupon);
+    }
 
     @PutMapping("/coupons/{id}")
     public Coupon updateCoupon(@PathVariable Long id, @RequestBody Coupon payload) {
-        Coupon coupon = couponRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        Coupon coupon = couponRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
         coupon.setCode(payload.getCode());
         coupon.setMessage(payload.getMessage());
         coupon.setActive(payload.getActive());
@@ -144,18 +243,24 @@ public class AdminFlowController {
     }
 
     @DeleteMapping("/coupons/{id}")
-    public void deleteCoupon(@PathVariable Long id) { couponRepository.deleteById(id); }
+    public void deleteCoupon(@PathVariable Long id) {
+        couponRepository.deleteById(id);
+    }
 
     @GetMapping("/worker-applications")
-    public List<WorkerApplication> workerApplications() { return workerApplicationRepository.findAll(); }
+    public List<WorkerApplication> workerApplications() {
+        return workerApplicationRepository.findAll();
+    }
 
     @PostMapping("/worker-applications/{id}/approve")
     public WorkerApplication approveWorker(@PathVariable Long id) {
         WorkerApplication application = workerApplicationRepository.findById(id).orElseThrow();
         application.setStatus("APPROVED");
+
         User user = userRepository.findById(application.getUserId()).orElseThrow();
         user.setRole(UserRole.WORKER);
         userRepository.save(user);
+
         return workerApplicationRepository.save(application);
     }
 
@@ -167,20 +272,31 @@ public class AdminFlowController {
     }
 
     @GetMapping("/cases")
-    public List<ServiceCase> allCases() { return serviceCaseRepository.findAll(); }
+    public List<ServiceCase> allCases() {
+        return serviceCaseRepository.findAll();
+    }
 
     @GetMapping("/users/workers")
-    public List<User> allWorkers() { return userRepository.findAll().stream().filter(u -> u.getRole() == UserRole.WORKER).toList(); }
+    public List<User> allWorkers() {
+        return userRepository.findAll().stream().filter(u -> u.getRole() == UserRole.WORKER).toList();
+    }
 
     @PutMapping("/users/workers/{id}")
     public User updateWorker(@PathVariable Long id, @RequestBody User payload) {
-        User user = userRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        if (user.getRole() != UserRole.WORKER) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User is not a worker");
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        if (user.getRole() != UserRole.WORKER) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User is not a worker");
+        }
+
         user.setName(payload.getName());
         user.setMobile(payload.getMobile());
         return userRepository.save(user);
     }
 
     @DeleteMapping("/users/workers/{id}")
-    public void deleteWorker(@PathVariable Long id) { userRepository.deleteById(id); }
+    public void deleteWorker(@PathVariable Long id) {
+        userRepository.deleteById(id);
+    }
 }
