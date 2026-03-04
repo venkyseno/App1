@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.config.StaticResourceConfig;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -31,14 +32,14 @@ public class FileUploadController {
             if (idx >= 0) ext = cleanName.substring(idx);
             String storedName = UUID.randomUUID() + ext;
 
-            Path uploadDir = Path.of("uploads");
+            Path uploadDir = StaticResourceConfig.uploadRoot();
             Files.createDirectories(uploadDir);
             Path target = uploadDir.resolve(storedName);
             Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
 
             return Map.of("url", "/uploads/" + storedName);
         } catch (IOException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "File upload failed");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "File upload failed: " + e.getMessage());
         }
     }
 }

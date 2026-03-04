@@ -8,9 +8,14 @@ import java.nio.file.Path;
 
 @Configuration
 public class StaticResourceConfig implements WebMvcConfigurer {
+
+    public static Path uploadRoot() {
+        return Path.of(System.getProperty("user.home"), "app1_uploads");
+    }
+
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        String uploadPath = Path.of("uploads").toAbsolutePath().toUri().toString();
+        String uploadPath = uploadRoot().toAbsolutePath().toUri().toString();
         registry.addResourceHandler("/uploads/**")
                 .addResourceLocations(uploadPath);
     }
