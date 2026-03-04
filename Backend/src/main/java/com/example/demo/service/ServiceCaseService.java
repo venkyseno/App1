@@ -26,6 +26,7 @@ public class ServiceCaseService {
                 .description(request.getDescription())
                 .customerPhone(request.getCustomerPhone())
                 .assistedByUserId(request.getAssistedByUserId())
+                .attachmentUrl(request.getAttachmentUrl())
                 .status(CaseStatus.CREATED)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -33,6 +34,10 @@ public class ServiceCaseService {
         ServiceCase saved = repository.save(serviceCase);
         auditService.log(AuditAction.CASE_CREATED, request.getAssistedByUserId(), saved.getId());
         return saved;
+    }
+
+    public List<ServiceCase> getAllCases() {
+        return repository.findAll();
     }
 
     public ServiceCase getCaseById(Long id) {
@@ -55,8 +60,8 @@ public class ServiceCaseService {
             return serviceCase;
         }
 
-        if (serviceCase.getStatus() != CaseStatus.IN_PROGRESS) {
-            throw new BusinessException("Case must be IN_PROGRESS before closing");
+        if (serviceCase.getStatus() != CaseStatus.WORK_DONE) {
+            throw new BusinessException("Case must be WORK_DONE before closing");
         }
 
         serviceCase.setServiceAmount(request.getServiceAmount());
