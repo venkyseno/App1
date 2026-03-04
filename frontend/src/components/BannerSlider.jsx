@@ -22,17 +22,13 @@ export default function BannerSlider() {
   const banner = banners[index];
 
   return (
-    <div className="cursor-pointer" onClick={() => navigate(banner.redirectPath || "/")}> 
-      <img
-        src={banner.imageUrl}
-        alt={banner.title}
-        className="rounded-xl w-full aspect-[16/9] object-cover"
-      />
-      <div className="gradient-card text-white text-center p-2 rounded-b-xl text-sm font-medium">
-        {banner.title}
-      </div>
-      <div className="flex justify-center gap-1 mt-2">
-        {banners.map((_, i) => <span key={i} className={`h-1.5 w-4 rounded-full ${i===index ? 'bg-indigo-600' : 'bg-gray-300'}`} />)}
+    <div className="overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-sm">
+      <button className="w-full text-left" onClick={() => navigate(banner.redirectPath || "/")}> 
+        <img src={banner.imageUrl} alt={banner.title} className="w-full aspect-[16/6] object-cover" />
+        <div className="gradient-card px-4 py-3 text-sm font-medium text-white">{banner.title}</div>
+      </button>
+      <div className="flex justify-center gap-1.5 py-3">
+        {banners.map((_, i) => <span key={i} className={`h-1.5 w-5 rounded-full transition ${i===index ? 'bg-indigo-600' : 'bg-gray-300'}`} />)}
       </div>
     </div>
   );

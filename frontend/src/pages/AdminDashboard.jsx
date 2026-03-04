@@ -1,25 +1,30 @@
 import { Link } from "react-router-dom";
+import { Briefcase, Receipt, ShieldCheck, Ticket } from "lucide-react";
+import { NavCardLink, PageContainer, StatCard } from "../components/ui";
 
 const tiles = [
-  { to: "/admin/banners", title: "Banners & Other Services", subtitle: "Manage banner pages, images, publish/edit" },
-  { to: "/admin/workers", title: "Workers", subtitle: "Pending requests, existing workers, edit/delete" },
-  { to: "/admin/works", title: "Works Created", subtitle: "Assigned/unassigned cases with status" },
-  { to: "/admin/coupons", title: "Coupons", subtitle: "Create, edit, delete, publish" },
-  { to: "/admin/withdrawals", title: "Withdrawals", subtitle: "Pending, approved and rejected" },
+  { to: "/admin/banners", title: "Banners & Other Services", subtitle: "Publish banners, manage marketplace services and items." },
+  { to: "/admin/workers", title: "Workers", subtitle: "Approve worker requests and maintain worker accounts." },
+  { to: "/admin/works", title: "Works Created", subtitle: "Assign workers and monitor case progression." },
+  { to: "/admin/coupons", title: "Coupons", subtitle: "Create active campaign coupons for customers." },
+  { to: "/admin/withdrawals", title: "Withdrawals", subtitle: "Review and process user withdrawal requests." },
 ];
 
 export default function AdminDashboard() {
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
-      <div className="grid md:grid-cols-2 gap-4">
-        {tiles.map((tile) => (
-          <Link key={tile.to} to={tile.to} className="bg-white border border-indigo-100 rounded-xl p-4 shadow hover:shadow-md transition">
-            <h2 className="font-semibold text-indigo-700">{tile.title}</h2>
-            <p className="text-sm text-gray-500 mt-1">{tile.subtitle}</p>
-          </Link>
-        ))}
+    <PageContainer title="Admin Dashboard" subtitle="Operate your marketplace with confidence from one place.">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard title="Total Orders" value="Live" icon={<Receipt size={18} />} tone="indigo" />
+        <StatCard title="Total Services" value="Catalog" icon={<Briefcase size={18} />} tone="purple" />
+        <StatCard title="Active Users" value="Realtime" icon={<ShieldCheck size={18} />} tone="emerald" />
+        <StatCard title="Revenue" value="Insights" icon={<Ticket size={18} />} tone="amber" />
       </div>
-    </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {tiles.map((tile) => <NavCardLink key={tile.to} {...tile} />)}
+      </div>
+
+      <Link to="/" className="text-sm font-medium text-indigo-600 hover:text-indigo-700">← Back to user app</Link>
+    </PageContainer>
   );
 }

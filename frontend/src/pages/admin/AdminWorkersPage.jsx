@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../../api/api";
+import { Card, DangerButton, EmptyState, PageContainer, PrimaryButton, SectionHeader, SecondaryButton } from "../../components/ui";
 
 export default function AdminWorkersPage() {
   const [applications, setApplications] = useState([]);
@@ -12,41 +13,35 @@ export default function AdminWorkersPage() {
   };
 
   useEffect(() => { load(); }, []);
+  const pending = applications.filter((x) => x.status === "PENDING");
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Workers Management</h1>
-
-      <section className="bg-white rounded-xl p-4 shadow">
-        <h2 className="font-semibold mb-3">Pending Worker Requests</h2>
-        {applications.filter((x) => x.status === "PENDING").map((a) => (
-          <div key={a.id} className="border rounded p-2 mb-2 flex justify-between items-center">
+    <PageContainer title="Workers Management" subtitle="Approve incoming worker applications and maintain worker accounts.">
+      <Card>
+        <SectionHeader title="Pending Worker Requests" />
+        {pending.length === 0 ? <EmptyState title="No pending requests" /> : pending.map((a) => (
+          <div key={a.id} className="mb-2 flex items-center justify-between rounded-lg border border-gray-200 p-3 text-sm">
             <span>{a.workerType} | {a.experienceLevel} | {a.mobile}</span>
-            <div className="space-x-2">
-              <button onClick={async () => { await api.post(`/admin/worker-applications/${a.id}/approve`); load(); }} className="bg-green-600 text-white px-2 py-1 rounded">Approve</button>
-              <button onClick={async () => { await api.post(`/admin/worker-applications/${a.id}/reject`); load(); }} className="bg-red-600 text-white px-2 py-1 rounded">Reject</button>
+            <div className="flex gap-2">
+              <PrimaryButton onClick={async () => { await api.post(`/admin/worker-applications/${a.id}/approve`); load(); }}>Approve</PrimaryButton>
+              <DangerButton onClick={async () => { await api.post(`/admin/worker-applications/${a.id}/reject`); load(); }}>Reject</DangerButton>
             </div>
           </div>
         ))}
-      </section>
+      </Card>
 
-      <section className="bg-white rounded-xl p-4 shadow">
-        <h2 className="font-semibold mb-3">Existing Workers</h2>
-        {workers.map((w) => (
-          <div key={w.id} className="border rounded p-2 mb-2 flex justify-between items-center">
+      <Card>
+        <SectionHeader title="Existing Workers" />
+        {workers.length === 0 ? <EmptyState title="No workers available" /> : workers.map((w) => (
+          <div key={w.id} className="mb-2 flex items-center justify-between rounded-lg border border-gray-200 p-3 text-sm">
             <span>{w.name} ({w.mobile})</span>
-            <div className="space-x-2">
-              <button onClick={async () => {
-                const name = prompt("Name", w.name);
-                if (!name) return;
-                await api.put(`/admin/users/workers/${w.id}`, { ...w, name });
-                load();
-              }} className="text-blue-600">Edit</button>
-              <button onClick={async () => { await api.delete(`/admin/users/workers/${w.id}`); load(); }} className="text-red-600">Delete</button>
+            <div className="flex gap-2">
+              <SecondaryButton onClick={async () => { const name = prompt("Name", w.name); if (!name) return; await api.put(`/admin/users/workers/${w.id}`, { ...w, name }); load(); }}>Edit</SecondaryButton>
+              <DangerButton onClick={async () => { await api.delete(`/admin/users/workers/${w.id}`); load(); }}>Delete</DangerButton>
             </div>
           </div>
         ))}
-      </section>
-    </div>
+      </Card>
+    </PageContainer>
   );
 }

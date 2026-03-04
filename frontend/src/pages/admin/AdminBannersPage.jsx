@@ -1,18 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import api, { uploadFile } from "../../api/api";
+import { Badge, Card, DangerButton, EmptyState, InputField, PageContainer, PrimaryButton, SectionHeader, SelectField, SecondaryButton, TextAreaField } from "../../components/ui";
 
-const EMPTY_BANNER = {
-  title: "",
-  imageUrl: "",
-  redirectType: "SERVICE",
-  targetId: "",
-  redirectPath: "/",
-  sortOrder: 1,
-  active: true,
-};
-
+const EMPTY_BANNER = { title: "", imageUrl: "", redirectType: "SERVICE", targetId: "", redirectPath: "/", sortOrder: 1, active: true };
 const EMPTY_SERVICE = { name: "", menuDetails: "", imageUrl: "", startPrice: "", active: true };
-
 const buildRedirectPath = (type, targetId) => {
   if (type === "ALL_SERVICES") return "/#all-services";
   if (type === "OTHER_SERVICES") return "/#other-services";
@@ -44,24 +35,13 @@ export default function AdminBannersPage() {
   }, [selectedServiceId]);
 
   const notifyApiError = (err) => alert(err?.response?.data || err?.message || "Request failed");
-
-  const redirectPreview = useMemo(
-    () => buildRedirectPath(bannerForm.redirectType, bannerForm.targetId),
-    [bannerForm.redirectType, bannerForm.targetId],
-  );
+  const redirectPreview = useMemo(() => buildRedirectPath(bannerForm.redirectType, bannerForm.targetId), [bannerForm.redirectType, bannerForm.targetId]);
 
   const saveBanner = async () => {
     if (!bannerForm.title.trim()) return alert("Banner title is required");
     if (!bannerForm.imageUrl?.trim()) return alert("Banner image is required");
-
     try {
-      await api.post("/admin/banners", {
-        title: bannerForm.title,
-        imageUrl: bannerForm.imageUrl,
-        redirectPath: redirectPreview,
-        sortOrder: Number(bannerForm.sortOrder || 1),
-        active: true,
-      });
+      await api.post("/admin/banners", { title: bannerForm.title, imageUrl: bannerForm.imageUrl, redirectPath: redirectPreview, sortOrder: Number(bannerForm.sortOrder || 1), active: true });
       setBannerForm({ ...EMPTY_BANNER, sortOrder: banners.length + 1 });
       load();
     } catch (err) { notifyApiError(err); }
@@ -93,13 +73,8 @@ export default function AdminBannersPage() {
     if (!itemForm.name.trim()) return alert("Item name is required");
     if (!itemForm.price) return alert("Item price is required");
     if (!itemForm.availableQuantity) return alert("Quantity is required");
-
     try {
-      await api.post(`/admin/other-services/${selectedServiceId}/items`, {
-        name: itemForm.name,
-        price: Number(itemForm.price),
-        availableQuantity: Number(itemForm.availableQuantity),
-      });
+      await api.post(`/admin/other-services/${selectedServiceId}/items`, { name: itemForm.name, price: Number(itemForm.price), availableQuantity: Number(itemForm.availableQuantity) });
       setItemForm({ name: "", price: "", availableQuantity: "" });
       const res = await api.get(`/admin/other-services/${selectedServiceId}/items`);
       setItems(res.data || []);
@@ -107,100 +82,107 @@ export default function AdminBannersPage() {
   };
 
   return (
-    <div className="p-6 space-y-8 bg-gradient-to-br from-indigo-50 to-cyan-50 min-h-screen">
-      <h1 className="text-2xl font-bold text-indigo-900">Banner & Service Management</h1>
-
-      <section className="bg-white rounded-2xl p-5 shadow border border-indigo-100">
-        <h2 className="font-semibold mb-3">Create New Banner</h2>
-        <input className="border p-2 rounded w-full mb-2" placeholder="Title (required)" value={bannerForm.title} onChange={(e) => setBannerForm({ ...bannerForm, title: e.target.value })} />
-        <div className="grid md:grid-cols-2 gap-2 mb-2">
-          <select className="border p-2 rounded" value={bannerForm.redirectType} onChange={(e) => setBannerForm({ ...bannerForm, redirectType: e.target.value })}>
+    <PageContainer title="Banner & Service Management" subtitle="Publish campaigns, attach redirect targets, and manage service menu items.">
+      <Card>
+        <SectionHeader title="Create Banner" subtitle="Use redirect type and target ID to bind banners with service pages." />
+        <div className="grid gap-3 md:grid-cols-2">
+          <InputField label="Title" placeholder="Festival Offer Banner" value={bannerForm.title} onChange={(e) => setBannerForm({ ...bannerForm, title: e.target.value })} />
+          <InputField label="Sort order" type="number" value={bannerForm.sortOrder} onChange={(e) => setBannerForm({ ...bannerForm, sortOrder: e.target.value })} />
+        </div>
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
+          <SelectField label="Redirect Type" value={bannerForm.redirectType} onChange={(e) => setBannerForm({ ...bannerForm, redirectType: e.target.value })}>
             <option value="SERVICE">Service page</option>
             <option value="OTHER_SERVICE">Other service page</option>
             <option value="ALL_SERVICES">All services section</option>
             <option value="OTHER_SERVICES">Other services section</option>
-          </select>
+          </SelectField>
           {(bannerForm.redirectType === "SERVICE" || bannerForm.redirectType === "OTHER_SERVICE") && (
-            <input className="border p-2 rounded" placeholder="Target ID" value={bannerForm.targetId} onChange={(e) => setBannerForm({ ...bannerForm, targetId: e.target.value })} />
+            <InputField label="Target ID" placeholder="e.g. 1" value={bannerForm.targetId} onChange={(e) => setBannerForm({ ...bannerForm, targetId: e.target.value })} />
           )}
         </div>
-        <p className="text-xs text-gray-500 mb-2">Redirect preview: <b>{redirectPreview}</b></p>
-        <input className="border p-2 rounded w-full mb-2" placeholder="Sort order" type="number" value={bannerForm.sortOrder} onChange={(e) => setBannerForm({ ...bannerForm, sortOrder: e.target.value })} />
-        <input className="border p-2 rounded w-full mb-2" type="file" accept="image/*" capture="environment" onChange={async (e) => {
-          try {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            const imageUrl = await uploadFile(file);
-            setBannerForm((prev) => ({ ...prev, imageUrl }));
-          } catch (err) { notifyApiError(err); }
-        }} />
-        <button onClick={saveBanner} className="bg-indigo-600 text-white px-4 py-2 rounded-lg">Publish Banner</button>
-      </section>
-
-      <section className="bg-white rounded-2xl p-5 shadow border border-indigo-100">
-        <h2 className="font-semibold mb-3">Create Other Service</h2>
-        <input className="border p-2 rounded w-full mb-2" placeholder="Service name (required)" value={serviceForm.name} onChange={(e) => setServiceForm({ ...serviceForm, name: e.target.value })} />
-        <textarea className="border p-2 rounded w-full mb-2" placeholder="Service description" value={serviceForm.menuDetails} onChange={(e) => setServiceForm({ ...serviceForm, menuDetails: e.target.value })} />
-        <input className="border p-2 rounded w-full mb-2" placeholder="Start price" value={serviceForm.startPrice} onChange={(e) => setServiceForm({ ...serviceForm, startPrice: e.target.value })} />
-        <input className="border p-2 rounded w-full mb-2" type="file" accept="image/*" capture="environment" onChange={async (e) => {
-          try {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            const imageUrl = await uploadFile(file);
-            setServiceForm((prev) => ({ ...prev, imageUrl }));
-          } catch (err) { notifyApiError(err); }
-        }} />
-        <button onClick={saveOtherService} className="bg-emerald-600 text-white px-4 py-2 rounded-lg">Publish Other Service</button>
-
-        <div className="mt-4 space-y-2">
-          {otherServices.map((s) => (
-            <div key={s.id} className="border rounded p-2 flex justify-between items-center">
-              <span>{s.name}</span>
-              <div className="space-x-3">
-                <button onClick={() => { setSelectedServiceId(String(s.id)); setEditingService(s); }} className="text-indigo-600">Edit</button>
-                <button onClick={async () => { await api.delete(`/admin/other-services/${s.id}`); load(); }} className="text-red-600">Delete</button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {editingService && (
-        <section className="bg-white rounded-2xl p-5 shadow border border-indigo-100">
-          <h2 className="font-semibold mb-3">Edit Service & Manage Items: {editingService.name}</h2>
-          <input className="border p-2 rounded w-full mb-2" value={editingService.name || ""} onChange={(e) => setEditingService({ ...editingService, name: e.target.value })} />
-          <textarea className="border p-2 rounded w-full mb-2" value={editingService.menuDetails || ""} onChange={(e) => setEditingService({ ...editingService, menuDetails: e.target.value })} />
-          <input className="border p-2 rounded w-full mb-2" value={editingService.startPrice || ""} onChange={(e) => setEditingService({ ...editingService, startPrice: e.target.value })} />
-          <input className="border p-2 rounded w-full mb-2" type="file" accept="image/*" capture="environment" onChange={async (e) => {
-            try {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              const imageUrl = await uploadFile(file);
-              setEditingService((prev) => ({ ...prev, imageUrl }));
-            } catch (err) { notifyApiError(err); }
+        <div className="mt-3 rounded-lg bg-indigo-50 px-3 py-2 text-sm">Redirect preview: <span className="font-medium text-indigo-700">{redirectPreview}</span></div>
+        <div className="mt-3 flex items-center gap-3">
+          <input type="file" accept="image/*" className="block w-full text-sm" onChange={async (e) => {
+            try { const file = e.target.files?.[0]; if (!file) return; if (file.size > 20 * 1024 * 1024) return alert("File must be below 20MB"); const imageUrl = await uploadFile(file); setBannerForm((prev) => ({ ...prev, imageUrl })); }
+            catch (err) { notifyApiError(err); }
           }} />
-          <button onClick={updateService} className="bg-indigo-600 text-white px-4 py-2 rounded-lg mb-3">Save Service</button>
+          <PrimaryButton onClick={saveBanner}>Publish Banner</PrimaryButton>
+        </div>
+        {bannerForm.imageUrl && <img src={bannerForm.imageUrl} alt="banner-preview" className="mt-3 h-28 w-full rounded-lg object-cover" />}
+      </Card>
 
-          <h3 className="font-medium mb-2">Menu Items</h3>
-          <input className="border p-2 rounded w-full mb-2" placeholder="Item name" value={itemForm.name} onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })} />
-          <input className="border p-2 rounded w-full mb-2" type="number" placeholder="Price" value={itemForm.price} onChange={(e) => setItemForm({ ...itemForm, price: e.target.value })} />
-          <input className="border p-2 rounded w-full mb-2" type="number" placeholder="Available quantity" value={itemForm.availableQuantity} onChange={(e) => setItemForm({ ...itemForm, availableQuantity: e.target.value })} />
-          <button onClick={addMenuItem} className="bg-black text-white px-4 py-2 rounded">Add Menu Item</button>
+      <Card>
+        <SectionHeader title="Create Other Service" subtitle="Create marketplace services with image, description and starting price." />
+        <div className="grid gap-3 md:grid-cols-2">
+          <InputField label="Service name" value={serviceForm.name} onChange={(e) => setServiceForm({ ...serviceForm, name: e.target.value })} />
+          <InputField label="Start price" value={serviceForm.startPrice} onChange={(e) => setServiceForm({ ...serviceForm, startPrice: e.target.value })} />
+        </div>
+        <TextAreaField label="Description" className="mt-3" value={serviceForm.menuDetails} onChange={(e) => setServiceForm({ ...serviceForm, menuDetails: e.target.value })} />
+        <div className="mt-3 flex items-center gap-3">
+          <input type="file" accept="image/*" className="block w-full text-sm" onChange={async (e) => {
+            try { const file = e.target.files?.[0]; if (!file) return; if (file.size > 20 * 1024 * 1024) return alert("File must be below 20MB"); const imageUrl = await uploadFile(file); setServiceForm((prev) => ({ ...prev, imageUrl })); }
+            catch (err) { notifyApiError(err); }
+          }} />
+          <PrimaryButton onClick={saveOtherService}>Publish Service</PrimaryButton>
+        </div>
+        {serviceForm.imageUrl && <img src={serviceForm.imageUrl} alt="service-preview" className="mt-3 h-28 w-full rounded-lg object-cover" />}
+      </Card>
 
-          <div className="mt-4 space-y-2">
-            {items.map((item) => (
-              <div key={item.id} className="border rounded p-2 flex justify-between">
-                <span>{item.name} • ₹{item.price} • Qty {item.availableQuantity}</span>
-                <button onClick={async () => {
-                  await api.delete(`/admin/other-services/items/${item.id}`);
-                  const res = await api.get(`/admin/other-services/${selectedServiceId}/items`);
-                  setItems(res.data || []);
-                }} className="text-red-600">Delete</button>
+      <Card>
+        <SectionHeader title="Existing Other Services" />
+        {otherServices.length === 0 ? <EmptyState title="No services published yet" /> : (
+          <div className="space-y-2">
+            {otherServices.map((s) => (
+              <div key={s.id} className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
+                <div>
+                  <p className="font-medium text-gray-900">{s.name}</p>
+                  <p className="text-xs text-gray-500">{s.menuDetails}</p>
+                </div>
+                <div className="flex gap-2">
+                  <SecondaryButton onClick={() => { setSelectedServiceId(String(s.id)); setEditingService(s); }}>Edit</SecondaryButton>
+                  <DangerButton onClick={async () => { await api.delete(`/admin/other-services/${s.id}`); load(); }}>Delete</DangerButton>
+                </div>
               </div>
             ))}
           </div>
-        </section>
+        )}
+      </Card>
+
+      {editingService && (
+        <Card>
+          <SectionHeader title={`Edit Service & Manage Items: ${editingService.name}`} action={<Badge tone="purple">Service ID #{editingService.id}</Badge>} />
+          <div className="grid gap-3 md:grid-cols-2">
+            <InputField label="Name" value={editingService.name || ""} onChange={(e) => setEditingService({ ...editingService, name: e.target.value })} />
+            <InputField label="Start price" value={editingService.startPrice || ""} onChange={(e) => setEditingService({ ...editingService, startPrice: e.target.value })} />
+          </div>
+          <TextAreaField label="Description" className="mt-3" value={editingService.menuDetails || ""} onChange={(e) => setEditingService({ ...editingService, menuDetails: e.target.value })} />
+          <div className="mt-3 flex items-center gap-3">
+            <input type="file" accept="image/*" className="block w-full text-sm" onChange={async (e) => {
+              try { const file = e.target.files?.[0]; if (!file) return; const imageUrl = await uploadFile(file); setEditingService((prev) => ({ ...prev, imageUrl })); }
+              catch (err) { notifyApiError(err); }
+            }} />
+            <PrimaryButton onClick={updateService}>Save Service</PrimaryButton>
+          </div>
+
+          <div className="mt-6 rounded-xl border border-gray-200 p-4">
+            <SectionHeader title="Menu Items" subtitle="Add or remove item name, price and available quantity." />
+            <div className="grid gap-3 md:grid-cols-3">
+              <InputField label="Item name" value={itemForm.name} onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })} />
+              <InputField label="Price" type="number" value={itemForm.price} onChange={(e) => setItemForm({ ...itemForm, price: e.target.value })} />
+              <InputField label="Available quantity" type="number" value={itemForm.availableQuantity} onChange={(e) => setItemForm({ ...itemForm, availableQuantity: e.target.value })} />
+            </div>
+            <PrimaryButton className="mt-3" onClick={addMenuItem}>Add Menu Item</PrimaryButton>
+            <div className="mt-4 space-y-2">
+              {items.map((item) => (
+                <div key={item.id} className="flex items-center justify-between rounded-lg border border-gray-200 p-2 text-sm">
+                  <span>{item.name} • ₹{item.price} • Qty {item.availableQuantity}</span>
+                  <DangerButton onClick={async () => { await api.delete(`/admin/other-services/items/${item.id}`); const res = await api.get(`/admin/other-services/${selectedServiceId}/items`); setItems(res.data || []); }}>Delete</DangerButton>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
       )}
-    </div>
+    </PageContainer>
   );
 }

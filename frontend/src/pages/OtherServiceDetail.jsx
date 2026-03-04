@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/api";
+import { Card, EmptyState, InputField, PageContainer, PrimaryButton, SectionHeader } from "../components/ui";
 
 export default function OtherServiceDetail() {
   const { id } = useParams();
@@ -19,53 +20,35 @@ export default function OtherServiceDetail() {
 
   const confirmBooking = async () => {
     if (!user) return navigate("/login");
-    const selected = items
-      .map((i) => ({ itemId: i.id, quantity: Number(cart[i.id] || 0) }))
-      .filter((i) => i.quantity > 0);
+    const selected = items.map((i) => ({ itemId: i.id, quantity: Number(cart[i.id] || 0) })).filter((i) => i.quantity > 0);
     if (!selected.length) return alert("Add at least one menu item");
 
-    await api.post("/other-service-orders", {
-      userId: user.id,
-      otherServiceId: Number(id),
-      items: selected,
-    });
+    await api.post("/other-service-orders", { userId: user.id, otherServiceId: Number(id), items: selected });
     alert("Other service booking confirmed");
     navigate("/profile/orders");
   };
 
-  if (!service) return <div className="p-6">Loading...</div>;
+  if (!service) return <PageContainer><Card>Loading...</Card></PageContainer>;
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="bg-white rounded-xl p-4 border">
-        <h1 className="text-xl font-bold">{service.name}</h1>
-        <p className="text-sm text-gray-500">{service.menuDetails}</p>
-      </div>
-
-      <div className="bg-white rounded-xl p-4 border">
-        <h2 className="font-semibold mb-2">Menu Items</h2>
-        {items.map((item) => (
-          <div key={item.id} className="border rounded p-2 mb-2 flex justify-between items-center">
+    <PageContainer title={service.name} subtitle={service.menuDetails || "Select item quantities and confirm booking."}>
+      <Card>
+        <SectionHeader title="Menu Items" />
+        {items.length === 0 ? <EmptyState title="No items available" /> : items.map((item) => (
+          <div key={item.id} className="mb-2 flex items-center justify-between rounded-lg border border-gray-200 p-3">
             <div>
-              <div className="font-medium">{item.name}</div>
+              <div className="font-medium text-gray-900">{item.name}</div>
               <div className="text-sm text-gray-500">₹{item.price} • Available {item.availableQuantity}</div>
             </div>
-            <input
-              type="number"
-              min="0"
-              max={item.availableQuantity}
-              value={cart[item.id] || 0}
-              onChange={(e) => setCart({ ...cart, [item.id]: Math.max(0, Number(e.target.value || 0)) })}
-              className="w-20 border rounded p-1"
-            />
+            <InputField type="number" min="0" max={item.availableQuantity} value={cart[item.id] || 0} onChange={(e) => setCart({ ...cart, [item.id]: Math.max(0, Number(e.target.value || 0)) })} className="w-24" />
           </div>
         ))}
-      </div>
+      </Card>
 
-      <div className="bg-white rounded-xl p-4 border">
-        <div className="font-semibold mb-2">Total: ₹{total.toFixed(2)}</div>
-        <button onClick={confirmBooking} className="w-full bg-black text-white py-3 rounded-xl">Confirm Booking</button>
-      </div>
-    </div>
+      <Card>
+        <div className="mb-3 text-lg font-semibold">Total: ₹{total.toFixed(2)}</div>
+        <PrimaryButton onClick={confirmBooking} className="w-full">Confirm Booking</PrimaryButton>
+      </Card>
+    </PageContainer>
   );
 }

@@ -3,9 +3,12 @@
 @tailwind utilities;
 
 :root {
-  --brand-primary: #4f46e5;
-  --brand-secondary: #06b6d4;
-  --brand-accent: #f59e0b;
+  --primary-50: #eef2ff;
+  --primary-100: #e0e7ff;
+  --primary-500: #6366f1;
+  --primary-600: #4f46e5;
+  --primary-700: #4338ca;
+  --accent-500: #8b5cf6;
 }
 
 * {
@@ -13,12 +16,21 @@
 }
 
 body {
-  background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  margin: 0;
   min-height: 100vh;
+  background: #f8fafc;
   color: #111827;
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 }
 
+#root {
+  min-height: 100vh;
+}
+
 .gradient-card {
-  background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+  background: linear-gradient(135deg, var(--primary-600), var(--accent-500));
+}
+
+.soft-panel {
+  background: radial-gradient(circle at top right, #e0e7ff, #f8fafc 45%);
 }

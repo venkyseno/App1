@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../api/api";
+import { Badge, Card, EmptyState, PageContainer } from "../components/ui";
 
 export default function Coupons() {
   const [coupons, setCoupons] = useState([]);
@@ -9,17 +10,20 @@ export default function Coupons() {
   }, []);
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Coupons</h1>
-      {coupons.length === 0 && <p className="text-gray-500">No coupons available.</p>}
-      <div className="space-y-3">
-        {coupons.map((c) => (
-          <div key={c.id} className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-            <div className="font-semibold">{c.code}</div>
-            <div className="text-sm text-gray-700">{c.message}</div>
-          </div>
-        ))}
-      </div>
-    </div>
+    <PageContainer title="Coupons" subtitle="Available offers for your next booking.">
+      {coupons.length === 0 ? <EmptyState title="No coupons available" /> : (
+        <div className="grid gap-3 md:grid-cols-2">
+          {coupons.map((c) => (
+            <Card key={c.id} className="bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
+              <div className="flex items-center justify-between">
+                <div className="font-semibold text-gray-900">{c.code}</div>
+                <Badge tone="yellow">Offer</Badge>
+              </div>
+              <div className="mt-2 text-sm text-gray-700">{c.message}</div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </PageContainer>
   );
 }

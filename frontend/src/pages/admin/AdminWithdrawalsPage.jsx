@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../../api/api";
+import { Badge, Card, DangerButton, EmptyState, PageContainer, PrimaryButton, SectionHeader, SecondaryButton } from "../../components/ui";
 
 export default function AdminWithdrawalsPage() {
   const [status, setStatus] = useState("PENDING");
@@ -14,29 +15,29 @@ export default function AdminWithdrawalsPage() {
   useEffect(() => { load(); }, [status]);
 
   return (
-    <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-bold">Withdrawals</h1>
+    <PageContainer title="Withdrawals" subtitle="Review and process cashback withdrawal requests.">
       <div className="flex gap-2">
         {["PENDING", "APPROVED", "REJECTED"].map((s) => (
-          <button key={s} onClick={() => setStatus(s)} className={`px-3 py-1 rounded ${status === s ? "bg-indigo-600 text-white" : "bg-gray-200"}`}>{s}</button>
+          <button key={s} onClick={() => setStatus(s)} className={`rounded-lg px-3 py-2 text-sm font-medium ${status === s ? "bg-indigo-600 text-white" : "bg-white border border-gray-200 text-gray-700"}`}>{s}</button>
         ))}
       </div>
-      {withdrawals.map((w) => (
-        <div key={w.id} className="bg-white border rounded p-3">
-          <div>User #{w.userId} • ₹{w.amount} • {w.status}</div>
-          {status === "PENDING" && (
-            <div className="mt-2 space-x-2">
-              <button onClick={async () => { await api.post(`/admin/withdrawals/${w.id}/approve?adminId=${admin?.id}`); load(); }} className="bg-green-600 text-white px-2 py-1 rounded">Approve</button>
-              <button onClick={async () => {
-                const reason = prompt("Rejection reason");
-                if (!reason) return;
-                await api.post(`/admin/withdrawals/${w.id}/reject?adminId=${admin?.id}`, { reason });
-                load();
-              }} className="bg-red-600 text-white px-2 py-1 rounded">Reject</button>
+      <Card>
+        <SectionHeader title={`${status} Requests`} />
+        {withdrawals.length === 0 ? <EmptyState title="No withdrawals found" /> : withdrawals.map((w) => (
+          <div key={w.id} className="mb-2 rounded-lg border border-gray-200 p-3">
+            <div className="flex items-center justify-between text-sm text-gray-700">
+              <span>User #{w.userId} • ₹{w.amount}</span>
+              <Badge tone={status === "APPROVED" ? "green" : status === "REJECTED" ? "red" : "yellow"}>{w.status}</Badge>
             </div>
-          )}
-        </div>
-      ))}
-    </div>
+            {status === "PENDING" && (
+              <div className="mt-3 flex gap-2">
+                <PrimaryButton onClick={async () => { await api.post(`/admin/withdrawals/${w.id}/approve?adminId=${admin?.id}`); load(); }}>Approve</PrimaryButton>
+                <DangerButton onClick={async () => { const reason = prompt("Rejection reason"); if (!reason) return; await api.post(`/admin/withdrawals/${w.id}/reject?adminId=${admin?.id}`, { reason }); load(); }}>Reject</DangerButton>
+              </div>
+            )}
+          </div>
+        ))}
+      </Card>
+    </PageContainer>
   );
 }
