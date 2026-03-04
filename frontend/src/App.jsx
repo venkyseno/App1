@@ -12,6 +12,13 @@ import AdminDashboard from "./pages/AdminDashboard";
 import WorkerDashboard from "./pages/WorkerDashboard";
 import AdminRoute from "./components/AdminRoute";
 import WorkerRoute from "./components/WorkerRoute";
+import Coupons from "./pages/Coupons";
+import AdminBannersPage from "./pages/admin/AdminBannersPage";
+import AdminWorkersPage from "./pages/admin/AdminWorkersPage";
+import AdminWorksPage from "./pages/admin/AdminWorksPage";
+import AdminCouponsPage from "./pages/admin/AdminCouponsPage";
+import AdminWithdrawalsPage from "./pages/admin/AdminWithdrawalsPage";
+import OtherServiceDetail from "./pages/OtherServiceDetail";
 
 function App() {
   return (
@@ -25,22 +32,21 @@ function App() {
           <Route path="/profile/orders" element={<Orders />} />
           <Route path="/profile/wallet" element={<Wallet />} />
           <Route path="/profile/withdraw" element={<Withdraw />} />
+          <Route path="/profile/coupons" element={<Coupons />} />
+          <Route path="/other-services/:id" element={<OtherServiceDetail />} />
           <Route path="/ask-ai" element={<AskAI />} />
           <Route
             path="/admin/dashboard"
-            element={
-              <AdminRoute>
-                <AdminDashboard />
-              </AdminRoute>
-            }
+            element={<AdminRoute><AdminDashboard /></AdminRoute>}
           />
+          <Route path="/admin/banners" element={<AdminRoute><AdminBannersPage /></AdminRoute>} />
+          <Route path="/admin/workers" element={<AdminRoute><AdminWorkersPage /></AdminRoute>} />
+          <Route path="/admin/works" element={<AdminRoute><AdminWorksPage /></AdminRoute>} />
+          <Route path="/admin/coupons" element={<AdminRoute><AdminCouponsPage /></AdminRoute>} />
+          <Route path="/admin/withdrawals" element={<AdminRoute><AdminWithdrawalsPage /></AdminRoute>} />
           <Route
             path="/worker/dashboard"
-            element={
-              <WorkerRoute>
-                <WorkerDashboard />
-              </WorkerRoute>
-            }
+            element={<WorkerRoute><WorkerDashboard /></WorkerRoute>}
           />
         </Routes>
       </Layout>
